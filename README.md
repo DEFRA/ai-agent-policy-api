@@ -1,8 +1,8 @@
-# cdp-python-backend-template
+# ai-agent-policy-api
 
 This is work-in-progress. See [To Do List](./TODO.md)
 
-- [cdp-python-backend-template](#cdp-python-backend-template)
+- [ai-agent-policy-api](#ai-agent-policy-api)
   - [Requirements](#requirements)
     - [Python](#python)
     - [Linting and Formatting](#linting-and-formatting)

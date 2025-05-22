@@ -5,3 +5,4 @@ pytest-cov
 pytest-asyncio
 ruff
 pre-commit
+scikit-learn

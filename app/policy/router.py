@@ -1,8 +1,7 @@
 from logging import getLogger
 import requests
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
-
+from fastapi import APIRouter, Depends, Query
 
 from app.common.http_client import async_client
 from app.common.mongo import get_db
@@ -31,7 +30,8 @@ async def get_question(
         response = requests.get(
             endpoint,
             headers={"Accept": "application/json",
-                     "User-Agent": "Python/Requests"}
+                     "User-Agent": "Python/Requests"},
+            timeout=5
         )
         response.raise_for_status()
         return response.json()

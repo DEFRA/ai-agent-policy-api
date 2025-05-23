@@ -1,6 +1,6 @@
 from logging import getLogger
-import requests
 
+import requests
 from fastapi import APIRouter, Depends, Query
 
 from app.common.http_client import async_client

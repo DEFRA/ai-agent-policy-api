@@ -4,6 +4,7 @@ aws_embedded_metrics
 asgi-logger
 pydantic_settings
 dnspython
+requests
 pymongo
 pymongo[aws,snappy,zstd,encryption]
 httpx

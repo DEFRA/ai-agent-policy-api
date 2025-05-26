@@ -31,7 +31,7 @@ async def get_question(
             endpoint,
             headers={"Accept": "application/json",
                      "User-Agent": "Python/Requests"},
-            timeout=5
+            timeout=240
         )
         response.raise_for_status()
         return response.json()

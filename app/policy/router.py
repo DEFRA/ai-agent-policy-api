@@ -26,8 +26,8 @@ async def get_question(
     """Get PQ from written answers api using provided question id"""
 
     proxies = {
-    "http": settings.HTTPS_PROXY,
-    "https": settings.HTTPS_PROXY,
+    "http": settings.http_proxy,
+    "https": settings.http_proxy,
     }
 
 

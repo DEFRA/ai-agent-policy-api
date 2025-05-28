@@ -13,6 +13,7 @@ class AppConfig(BaseSettings):
     http_proxy: Optional[HttpUrl] = None
     enable_metrics: bool = False
     tracing_header: str = "x-cdp-request-id"
+    https_proxy: str = "http://localhost:3128"
 
 
 config = AppConfig()

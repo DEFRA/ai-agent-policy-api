@@ -23,7 +23,7 @@ async def get_question(
     question_id: int = Query(0, description="Index of PQ")
 ):
     """Get PQ from written answers api using provided question id"""
-    print(os.environ)
+
     base_url = "https://questions-statements-api.parliament.uk/api"
     endpoint = f"{base_url}/writtenquestions/questions/{question_id}"
 
@@ -39,6 +39,13 @@ async def get_question(
     except Exception as e:
         print(f"Error fetching question {question_id}: {e}")
         return {}
+
+
+@router.get("/os")
+async def get_env():
+    """Get OS env vars"""
+    return os.environ
+
 
 @router.get("/db")
 async def db_query(db=Depends(get_db)):

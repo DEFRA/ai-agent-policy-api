@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, Query
 
 from app.common.http_client import async_client
 from app.common.mongo import get_db
-from app.config import config as settings
 
 router = APIRouter(prefix="/policy")
 logger = getLogger(__name__)
@@ -26,8 +25,8 @@ async def get_question(
     """Get PQ from written answers api using provided question id"""
 
     proxies = {
-    "http": settings.http_proxy,
-    "https": settings.http_proxy,
+    "http": "http://localhost:3128",
+    "https": "http://localhost:3128",
     }
 
 

@@ -1,3 +1,4 @@
+import os
 from logging import getLogger
 
 import requests
@@ -22,7 +23,7 @@ async def get_question(
     question_id: int = Query(0, description="Index of PQ")
 ):
     """Get PQ from written answers api using provided question id"""
-
+    print(os.environ)
     base_url = "https://questions-statements-api.parliament.uk/api"
     endpoint = f"{base_url}/writtenquestions/questions/{question_id}"
 

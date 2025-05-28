@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.common.http_client import async_client
 from app.common.mongo import get_db
+from app.config import config as settings
 
 router = APIRouter(prefix="/policy")
 logger = getLogger(__name__)
@@ -24,6 +25,12 @@ async def get_question(
 ):
     """Get PQ from written answers api using provided question id"""
 
+    proxies = {
+    "http": settings.HTTPS_PROXY,
+    "https": settings.HTTPS_PROXY,
+    }
+
+
     base_url = "https://questions-statements-api.parliament.uk/api"
     endpoint = f"{base_url}/writtenquestions/questions/{question_id}"
 
@@ -32,7 +39,8 @@ async def get_question(
             endpoint,
             headers={"Accept": "application/json",
                      "User-Agent": "Python/Requests"},
-            timeout=5
+            timeout=5,
+            proxies=proxies
         )
         response.raise_for_status()
         return response.json()

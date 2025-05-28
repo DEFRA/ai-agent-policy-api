@@ -1,5 +1,6 @@
-from logging import getLogger
 import os
+from logging import getLogger
+
 import requests
 from fastapi import APIRouter, Depends, Query
 

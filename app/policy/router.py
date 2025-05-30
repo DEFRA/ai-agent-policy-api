@@ -222,7 +222,7 @@ def create_documents(df):
     answer_documents = []
 
     for _index, question in df.iterrows():
-
+        print(f"Creating embedding for {question}")
         try:
             question_documents.append(
                 Document(

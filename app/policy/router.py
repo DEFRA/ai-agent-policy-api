@@ -55,7 +55,7 @@ def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons
             headers={"Accept": "application/json",
                      "User-Agent": "Python/Requests"},
             params=params,
-            timeout=5,
+            timeout=500,
             proxies=proxies
         )
         response.raise_for_status()

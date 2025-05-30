@@ -162,8 +162,12 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
     # Initialize list to store all question details
     all_questions = []
 
+    count = 0
     # Process each ID
     for i, question_id in enumerate(all_ids, 1):
+        count += 1
+        if count > 1000:
+            break
         # Only print progress every 250 questions
         if i % 250 == 0 or i == 1:
             print(

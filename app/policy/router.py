@@ -1,3 +1,4 @@
+import os
 import re
 import time
 from logging import getLogger
@@ -12,6 +13,7 @@ from langchain_openai import OpenAIEmbeddings
 
 from app.common.http_client import async_client
 from app.common.mongo import get_db
+from app.config import config as settings
 
 question_store = None
 answer_store = None
@@ -213,6 +215,9 @@ def populate_embeddable_answers(df):
 
 
 def create_documents(df):
+    print(settings.OPENAI_API_KEY)
+    if not os.getenv("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
     question_documents = []
     answer_documents = []
 

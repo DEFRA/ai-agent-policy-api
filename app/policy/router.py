@@ -157,8 +157,10 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
     """
     # Get all question IDs
     print("Fetching all question IDs...")
-    all_ids = get_all_question_ids(
-        answering_body_id=answering_body_id, house=house)
+    print(f"Params {answering_body_id}, {house}")
+#    all_ids = get_all_question_ids(
+#        answering_body_id=answering_body_id, house=house)
+    all_ids = [1800970,1801047,1800970,1801645]
 
     # Initialize list to store all question details
     all_questions = []

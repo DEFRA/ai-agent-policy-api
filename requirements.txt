@@ -4,6 +4,8 @@ aws_embedded_metrics
 asgi-logger
 pydantic_settings
 dnspython
+langchain-core
+langchain-openai
 requests
 pandas
 pymongo

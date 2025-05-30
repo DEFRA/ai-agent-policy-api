@@ -5,6 +5,7 @@ asgi-logger
 pydantic_settings
 dnspython
 requests
+pandas
 pymongo
 pymongo[aws,snappy,zstd,encryption]
 httpx

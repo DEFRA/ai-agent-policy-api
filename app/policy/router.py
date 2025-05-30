@@ -49,6 +49,7 @@ def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons
         params["answeringBodies"] = str(answering_body_id)
 
     try:
+        print(f"Fetching ids with skip {skip}")
         response = requests.get(
             endpoint,
             headers={"Accept": "application/json",
@@ -262,11 +263,13 @@ def store_documents(answering_body_id=13):
 
 @router.on_event("startup")
 async def startup_event():
+    print("STARTUP")
     global question_store
     global answer_store
 
     try:
         question_store, answer_store = store_documents()
+        print("STARTUP: following store creation")
 
     except Exception as e:
         print(f"Error during startup: {e}")

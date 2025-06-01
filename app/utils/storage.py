@@ -6,9 +6,10 @@ from fastapi import APIRouter
 from langchain_core.documents import Document
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_openai import OpenAIEmbeddings
-from policy_retrieval import get_all_question_details
 
 from app.config import config as settings
+
+from .policy_retrieval import get_all_question_details
 
 question_store = None
 answer_store = None

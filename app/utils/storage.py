@@ -34,7 +34,7 @@ def populate_embeddable_answers(df):
 
 
 def create_documents(df):
-    print(settings.OPENAI_API_KEY)
+    print(f"Storing {df.size[0]} documents")
     if not os.getenv("OPENAI_API_KEY"):
         os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
     question_documents = []
@@ -65,7 +65,7 @@ def create_documents(df):
                 )
             )
         except Exception as e:
-            print(f"Error fetching question {question}: {e}")
+            print(f"Error embedding question {question}: {e}")
 
     return question_documents, answer_documents
 

@@ -16,8 +16,11 @@ async def lifespan(_: FastAPI):
     # Startup
     client = await get_mongo_client()
     logger.info("MongoDB client connected")
+    print("Yielding")
     yield
     # Shutdown
+    print("Exiting")
+
     if client:
         await client.close()
         logger.info("MongoDB client closed")

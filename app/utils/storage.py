@@ -34,7 +34,7 @@ def populate_embeddable_answers(df):
 
 
 def create_documents(df):
-    print(f"Storing {df.size[0]} documents")
+    print(f"Storing {df.shape[0]} documents")
     if not os.getenv("OPENAI_API_KEY"):
         os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
     question_documents = []

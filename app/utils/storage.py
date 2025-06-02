@@ -80,7 +80,7 @@ def create_vector_store(documents):
                                       )
 
 
-def store_documents(answering_body_id=13):
+async def store_documents(answering_body_id=13):
     print("Retrieving documents for storage")
     questions = get_all_question_details(answering_body_id)
     # use Pandas for text manipulation

@@ -6,15 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.common.http_client import async_client
 from app.common.mongo import get_db
-from app.utils.storage import store_documents
+from app.utils.storage import get_question_match, get_answer_match
 
-question_store = None
-answer_store = None
 
 router = APIRouter(prefix="/policy")
 logger = getLogger(__name__)
 
-
+"""
 @router.on_event("startup")
 async def startup_event():
     print("STARTUP")
@@ -28,6 +26,7 @@ async def startup_event():
     except Exception as e:
         print(f"Error during startup: {e}")
 
+"""
 
 # remove this example route
 @router.get("/test")
@@ -84,9 +83,9 @@ async def search_questions(
     top_results = []
     try:
         # Perform search
-        top_results = question_store.similarity_search_with_score(
-                            query=question,
-                            k=limit
+        top_results = get_question_match(
+                            question=question,
+                            limit=limit
                         )
 
         return {
@@ -107,9 +106,9 @@ async def search_answers(
     top_results = []
     try:
         # Perform search
-        top_results = answer_store.similarity_search_with_score(
-                            query=question,
-                            k=limit
+        top_results = get_answer_match(
+                            question=question,
+                            limit=limit
                         )
 
         return {

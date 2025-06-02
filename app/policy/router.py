@@ -6,8 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.common.http_client import async_client
 from app.common.mongo import get_db
-from app.utils.storage import get_question_match, get_answer_match
-
+from app.utils.storage import get_answer_match, get_question_match
 
 router = APIRouter(prefix="/policy")
 logger = getLogger(__name__)

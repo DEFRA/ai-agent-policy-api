@@ -41,7 +41,7 @@ def create_documents(df):
     answer_documents = []
 
     for _index, question in df.iterrows():
-        print(f"Creating embedding for {question}")
+        print(f"Creating embedding for {question['id']}")
         try:
             question_documents.append(
                 Document(
@@ -81,6 +81,7 @@ def create_vector_store(documents):
 
 
 def store_documents(answering_body_id=13):
+    print("Retrieving documents for storage")
     questions = get_all_question_details(answering_body_id)
     # use Pandas for text manipulation
     df = pd.DataFrame(questions)
@@ -91,3 +92,17 @@ def store_documents(answering_body_id=13):
     question_store = create_vector_store(question_documents)
     answer_store = create_vector_store(answer_documents)
     return question_store, answer_store
+
+
+def get_question_match(question, limit):
+    return question_store.similarity_search_with_score(
+                            query=question,
+                            k=limit
+                        )
+
+
+def get_answer_match(question, limit):
+    return answer_store.similarity_search_with_score(
+                            query=question,
+                            k=limit
+                        )

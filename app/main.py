@@ -17,7 +17,7 @@ logger = getLogger(__name__)
 async def lifespan(_: FastAPI):
     # Startup
     client = await get_mongo_client()
-    logger.info("MongoDB client connected"
+    logger.info("MongoDB client connected")
     question_store, answer_store = await check_storage()
     print("Yielding")
     yield

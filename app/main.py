@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from app.common.mongo import get_mongo_client
 from app.common.tracing import TraceIdMiddleware
+from app.config import config
 from app.example.router import router as example_router
 from app.health.router import router as health_router
 from app.policy.router import router as policy_router
@@ -18,6 +19,7 @@ async def lifespan(_: FastAPI):
     # Startup
     client = await get_mongo_client()
     logger.info("MongoDB client connected")
+    print(f"S3_BUCKET: {config.S3_BUCKET}")
     question_store, answer_store = await check_storage()
     print("Yielding")
     yield

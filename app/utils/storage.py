@@ -106,12 +106,12 @@ async def check_storage():
     if (not question_path.exists() or
         not answer_path.exists()):
        print("STORING")
-       await store_documents(embed_model, question_path, answer_path)
+       question_store, answer_store = await store_documents(embed_model, question_path, answer_path)
     else:
         print("Retrieving stores")
 
-    question_store = load_store(QUESTION_STORE_FILE, embed_model)
-    answer_store = load_store(ANSWER_STORE_FILE, embed_model)
+#    question_store = load_store(QUESTION_STORE_FILE, embed_model)
+#    answer_store = load_store(ANSWER_STORE_FILE, embed_model)
 
     return question_store, answer_store
 

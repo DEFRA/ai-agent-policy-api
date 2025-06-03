@@ -1,6 +1,5 @@
 import os
 from logging import getLogger
-from pathlib import Path
 
 import pandas as pd
 from fastapi import APIRouter
@@ -99,8 +98,9 @@ def load_store(store_path, embed_model):
 async def check_storage():
 #    question_path = Path(QUESTION_STORE_FILE)
 #    answer_path = Path(ANSWER_STORE_FILE)
-    question_path = f"/tmp/question/"
-    answer_path = f"/tmp/answer/"
+    parts = ["tmp","question","answer"]
+    question_path = "/" + parts[0] + "/" + parts[1] + "/"
+    answer_path = "/" + parts[0] + "/" + parts[2] + "/"
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                  )

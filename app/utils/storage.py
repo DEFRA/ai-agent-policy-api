@@ -80,16 +80,15 @@ def create_documents(df):
 def create_vector_store(documents, embed_model, store_path):
     print(f"Would store here {store_path}")
 
-#    vector_store = FAISS.from_documents(
-    return FAISS.from_documents(
+    vector_store = FAISS.from_documents(
                                       documents,
                                       embedding=embed_model,
                                       distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT
                                       )
     # Save vector store
- #    vector_store.save_local(store_path)
+     vector_store.save_local(store_path)
 
-#    return vector_store
+    return vector_store
 
 
 def load_store(store_path, embed_model):
@@ -98,20 +97,22 @@ def load_store(store_path, embed_model):
 
 
 async def check_storage():
-    question_path = Path(QUESTION_STORE_FILE)
-    answer_path = Path(ANSWER_STORE_FILE)
+#    question_path = Path(QUESTION_STORE_FILE)
+#    answer_path = Path(ANSWER_STORE_FILE)
+    question_path = f"/tmp/question/"
+    answer_path = f"/tmp/answer/"
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                  )
     if (not question_path.exists() or
         not answer_path.exists()):
        print("STORING")
-       question_store, answer_store = await store_documents(embed_model, question_path, answer_path)
+       await store_documents(embed_model, question_path, answer_path)
     else:
         print("Retrieving stores")
 
-#    question_store = load_store(QUESTION_STORE_FILE, embed_model)
-#    answer_store = load_store(ANSWER_STORE_FILE, embed_model)
+    question_store = load_store(QUESTION_STORE_FILE, embed_model)
+    answer_store = load_store(ANSWER_STORE_FILE, embed_model)
 
     return question_store, answer_store
 

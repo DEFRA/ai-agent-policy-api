@@ -104,6 +104,8 @@ def load_store(store_path, embed_model):
 
 async def check_storage():
 
+    global question_store, answer_store
+
     parts = ["tmp","question","answer"]
     question_path = Path("/" + parts[0] + "/" + parts[1] + "/")
     answer_path = Path("/" + parts[0] + "/" + parts[2] + "/")
@@ -139,6 +141,7 @@ async def store_documents(embed_model, question_path, answer_path,answering_body
 
 
 def get_question_match(question, limit):
+    print(question_store)
     return question_store.similarity_search_with_score(
                             query=question,
                             k=limit

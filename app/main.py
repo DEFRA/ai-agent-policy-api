@@ -4,6 +4,7 @@ from logging import getLogger
 from fastapi import FastAPI
 
 from app.common.mongo import get_mongo_client
+from app.common.s3 import S3Client
 from app.common.tracing import TraceIdMiddleware
 from app.config import config
 from app.example.router import router as example_router
@@ -18,6 +19,9 @@ logger = getLogger(__name__)
 async def lifespan(_: FastAPI):
     # Startup
     print(f"S3_BUCKET: {config.S3_BUCKET}")
+    s3_client = S3Client()
+    s3_client.check_connection()
+
     client = await get_mongo_client()
     logger.info("MongoDB client connected")
 
@@ -26,6 +30,10 @@ async def lifespan(_: FastAPI):
     yield
     # Shutdown
     print("Exiting")
+
+    if s3_client:
+        s3_client.close_connection()
+        logger.info("S3 client closed")
 
     if client:
         await client.close()

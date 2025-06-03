@@ -1,15 +1,20 @@
 import os
 from logging import getLogger
+from pathlib import Path
 
 import pandas as pd
 from fastapi import APIRouter
+from langchain.vectorstores import FAISS
+from langchain.vectorstores.utils import DistanceStrategy
 from langchain_core.documents import Document
-from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_openai import OpenAIEmbeddings
 
 from app.config import config as settings
 
 from .policy_retrieval import get_all_question_details
+
+QUESTION_STORE_FILE="question_store"
+ANSWER_STORE_FILE="answer_store"
 
 question_store = None
 answer_store = None
@@ -36,7 +41,9 @@ def populate_embeddable_answers(df):
 def create_documents(df):
     print(f"Storing {df.shape[0]} documents")
     if not os.getenv("OPENAI_API_KEY"):
+        print("Retrieving OPENAI API key")
         os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
+
     question_documents = []
     answer_documents = []
 
@@ -70,17 +77,44 @@ def create_documents(df):
     return question_documents, answer_documents
 
 
-def create_vector_store(documents):
-    embeddings = OpenAIEmbeddings(
+def create_vector_store(documents, embed_model, store_path):
+
+    vector_store = FAISS.from_documents(
+                                      documents,
+                                      embedding=embed_model,
+                                      distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT
+                                      )
+    # Save vector store
+    vector_store.save_local(store_path)
+
+    return vector_store
+
+
+def load_store(store_path, embed_model):
+    # Load FAISS index back
+    return FAISS.load_local(store_path, embed_model,allow_dangerous_deserialization=True)
+
+
+async def check_storage():
+    question_path = Path(QUESTION_STORE_FILE)
+    answer_path = Path(ANSWER_STORE_FILE)
+    embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                  )
-    return InMemoryVectorStore.from_documents(
-                                      documents,
-                                      embedding=embeddings,
-                                      )
+    if (not question_path.exists() or
+        not answer_path.exists()):
+       print("STORING")
+       await store_documents(embed_model, question_path, answer_path)
+    else:
+        print("Retrieving stores")
+
+    question_store = load_store(QUESTION_STORE_FILE, embed_model)
+    answer_store = load_store(ANSWER_STORE_FILE, embed_model)
+
+    return question_store, answer_store
 
 
-async def store_documents(answering_body_id=13):
+async def store_documents(embed_model, question_path, answer_path,answering_body_id=13):
     print("Retrieving documents for storage")
     questions = get_all_question_details(answering_body_id)
     # use Pandas for text manipulation
@@ -89,8 +123,9 @@ async def store_documents(answering_body_id=13):
     df = populate_embeddable_answers(df)
 
     question_documents, answer_documents = create_documents(df)
-    question_store = create_vector_store(question_documents)
-    answer_store = create_vector_store(answer_documents)
+    question_store = create_vector_store(question_documents, embed_model, question_path)
+    answer_store = create_vector_store(answer_documents, embed_model, answer_path)
+
     return question_store, answer_store
 
 

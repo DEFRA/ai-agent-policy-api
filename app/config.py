@@ -14,7 +14,7 @@ class AppConfig(BaseSettings):
     enable_metrics: bool = False
     tracing_header: str = "x-cdp-request-id"
 
-    S3_BUCKET: Optional[str] = None
+    S3_BUCKET: str = "dev-policy-store-c63f2"
     S3_ENDPOINT: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
 

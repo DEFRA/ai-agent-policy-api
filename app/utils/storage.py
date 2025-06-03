@@ -78,16 +78,18 @@ def create_documents(df):
 
 
 def create_vector_store(documents, embed_model, store_path):
+    print(f"Would store here {store_path}")
 
-    vector_store = FAISS.from_documents(
+#    vector_store = FAISS.from_documents(
+    return FAISS.from_documents(
                                       documents,
                                       embedding=embed_model,
                                       distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT
                                       )
     # Save vector store
-    vector_store.save_local(store_path)
+ #    vector_store.save_local(store_path)
 
-    return vector_store
+#    return vector_store
 
 
 def load_store(store_path, embed_model):

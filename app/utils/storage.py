@@ -117,8 +117,8 @@ async def check_storage():
     else:
         print("Retrieving stores")
 
-    question_store = load_store(QUESTION_STORE_FILE, embed_model)
-    answer_store = load_store(ANSWER_STORE_FILE, embed_model)
+    question_store = load_store(question_path, embed_model)
+    answer_store = load_store(answer_path, embed_model)
 
     return question_store, answer_store
 

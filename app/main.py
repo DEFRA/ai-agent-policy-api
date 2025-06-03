@@ -8,8 +8,7 @@ from app.common.tracing import TraceIdMiddleware
 from app.example.router import router as example_router
 from app.health.router import router as health_router
 from app.policy.router import router as policy_router
-
-#from app.utils.storage import store_documents
+from app.utils.storage import check_storage
 
 logger = getLogger(__name__)
 
@@ -19,6 +18,7 @@ async def lifespan(_: FastAPI):
     # Startup
     client = await get_mongo_client()
     logger.info("MongoDB client connected")
+    question_store, answer_store = await check_storage()
     print("Yielding")
     yield
     # Shutdown

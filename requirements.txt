@@ -6,6 +6,9 @@ pydantic_settings
 dnspython
 langchain-core
 langchain-openai
+langchain
+langchain-community
+faiss-cpu
 requests
 pandas
 pymongo

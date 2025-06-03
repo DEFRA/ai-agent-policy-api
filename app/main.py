@@ -17,9 +17,10 @@ logger = getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # Startup
+    print(f"S3_BUCKET: {config.S3_BUCKET}")
     client = await get_mongo_client()
     logger.info("MongoDB client connected")
-    print(f"S3_BUCKET: {config.S3_BUCKET}")
+
     question_store, answer_store = await check_storage()
     print("Yielding")
     yield

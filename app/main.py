@@ -19,6 +19,7 @@ async def lifespan(_: FastAPI):
     client = await get_mongo_client()
     logger.info("MongoDB client connected")
     question_store, answer_store = await check_storage()
+    print("Yielding")
     yield
     # Shutdown
     if client:

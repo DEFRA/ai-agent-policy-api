@@ -87,12 +87,18 @@ def create_vector_store(documents, embed_model, store_path):
                                       )
     # Save vector store
     vector_store.save_local(store_path)
+    for file in store_path.iterdir():
+        print(file)
 
     return vector_store
 
 
 def load_store(store_path, embed_model):
     # Load FAISS index back
+    print("LOADING")
+    for file in store_path.iterdir():
+        print(file)
+
     return FAISS.load_local(store_path, embed_model,allow_dangerous_deserialization=True)
 
 

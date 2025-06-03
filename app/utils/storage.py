@@ -86,7 +86,7 @@ def create_vector_store(documents, embed_model, store_path):
                                       distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT
                                       )
     # Save vector store
-     vector_store.save_local(store_path)
+    vector_store.save_local(store_path)
 
     return vector_store
 

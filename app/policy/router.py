@@ -82,11 +82,12 @@ async def search_questions(
     top_results = []
     try:
         # Perform search
+        print("Before get question")
         top_results = get_question_match(
                             question=question,
                             limit=limit
                         )
-
+        print(f"After {top_results}")
         return {
             "results": top_results,
             "query": question,

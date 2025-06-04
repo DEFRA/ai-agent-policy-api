@@ -142,10 +142,11 @@ async def store_documents(embed_model, question_path, answer_path,answering_body
 
 def get_question_match(question, limit):
     print(question_store)
-    return question_store.similarity_search_with_score(
+    documents =  question_store.similarity_search_with_score(
                             query=question,
                             k=limit
                         )
+    return [d["page_content"] for d in documents]
 
 
 def get_answer_match(question, limit):

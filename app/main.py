@@ -7,7 +7,6 @@ from app.common.mongo import get_mongo_client
 from app.common.s3 import S3Client
 from app.common.tracing import TraceIdMiddleware
 from app.config import config
-from app.example.router import router as example_router
 from app.health.router import router as health_router
 from app.policy.router import router as policy_router
 from app.utils.storage import check_storage
@@ -47,5 +46,4 @@ app.add_middleware(TraceIdMiddleware)
 
 # Setup Routes
 app.include_router(health_router)
-app.include_router(example_router)
 app.include_router(policy_router)

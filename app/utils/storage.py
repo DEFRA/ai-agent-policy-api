@@ -146,12 +146,13 @@ def get_question_match(question, limit):
                             query=question,
                             k=limit
                         )
-    print( [(d["id"],d["metadata"]["page_content"]) for d in documents])
-    return ["dummy1","dummy2"]
+
+    return [{"id":doc.id, "question":doc.page_content, "uin":doc.metadata["uin"], "score":float(score)} for doc,score in documents]
 
 
 def get_answer_match(question, limit):
-    return answer_store.similarity_search_with_score(
+    documents = answer_store.similarity_search_with_score(
                             query=question,
                             k=limit
                         )
+    return [{"id":doc.id, "answer":doc.page_content, "score":float(score)} for doc,score in documents]

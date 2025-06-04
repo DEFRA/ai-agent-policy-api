@@ -146,7 +146,7 @@ def get_question_match(question, limit):
                             query=question,
                             k=limit
                         )
-    return [d["page_content"] for d in documents]
+    return [(d["id"],d["metadata"]["page_content"]) for d in documents]
 
 
 def get_answer_match(question, limit):

@@ -115,15 +115,6 @@ async def check_storage():
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                  )
-    q_pkl = question_dir + "index.pkl"
-    q_faiss = question_dir + "index.faiss"
-    s3_client.download_file(q_pkl, q_pkl)
-    s3_client.download_file(q_faiss, q_faiss)
-
-    a_pkl = answer_dir + "index.pkl"
-    a_faiss = answer_dir + "index.faiss"
-    s3_client.download_file(a_pkl, a_pkl)
-    s3_client.download_file(a_faiss, a_faiss)
 
     question_path = Path(question_dir)
     answer_path = Path(answer_dir)

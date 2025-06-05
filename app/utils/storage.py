@@ -1,5 +1,6 @@
 import os
 from logging import getLogger
+from pathlib import Path
 
 import pandas as pd
 from fastapi import APIRouter
@@ -102,7 +103,15 @@ def load_store(s3_client, store_dir, embed_model):
     s3_client.download_file(faiss_file, faiss_file)
     s3_client.download_file(pickle_file, pickle_file)
     print("Loaded index files")
-    return FAISS.load_local(store_dir, embed_model,allow_dangerous_deserialization=True)
+    for file in Path(store_dir).iterdir():
+        print(f"Located {file}")
+    try:
+       store = FAISS.load_local(store_dir, embed_model,allow_dangerous_deserialization=True)
+       print(f"Loaded FAISS from {store_dir}")
+       return store
+    except Exception as e:
+       print(f"Error creating FAISS: {e}")
+       return None
 
 
 async def check_storage():

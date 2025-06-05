@@ -58,6 +58,7 @@ class S3Client:
 
     def download_file(self, object_name, file_name):
         """Downloads a file from the S3 bucket."""
+        print(f"ATTEMPTING TO DOWNLOAD object {object_name} to file {file_name}")
         try:
             self.s3.download_file(self.bucket_name, object_name, file_name)
 #            logger.info(f"File {object_name} downloaded as {file_name}")

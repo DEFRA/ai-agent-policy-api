@@ -96,6 +96,11 @@ def create_vector_store(s3_client, documents, embed_model, store_dir):
 
 def load_store(s3_client, store_dir, embed_model):
     # Load FAISS index back
+    store_path = Path(store_dir)
+    if not store_path.exists():
+        store_path.mkdir()
+        print(f"Created directory {store_path}")
+
     print("LOADING")
     faiss_file = store_dir + "index.faiss"
     pickle_file = store_dir + "index.pkl"

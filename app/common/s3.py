@@ -32,6 +32,18 @@ class S3Client:
             print(f"Failed to connect to S3 bucket: {e}")
         return False
 
+
+    def check_object_existence(self, object_name):
+        """Checks if the named object exists in the attached S3 bucket."""
+        try:
+            self.s3.head_bucket(Bucket=self.bucket_name)
+            self.s3.head_object(Bucket=self.bucket_name, Key=object_name)
+            print(f"{object_name} exists in {self.bucket_name}")
+            return True
+        except Exception as e:
+            print(f"Failed to find {object_name} in {self.bucket_name}: {e}")
+        return False
+
     def upload_file(self, file_name, object_name=None):
         """Uploads a file to the S3 bucket."""
         if object_name is None:

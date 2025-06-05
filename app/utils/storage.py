@@ -1,6 +1,5 @@
 import os
 from logging import getLogger
-from pathlib import Path
 
 import pandas as pd
 from fastapi import APIRouter
@@ -94,13 +93,16 @@ def create_vector_store(s3_client, documents, embed_model, store_dir):
     return vector_store
 
 
-def load_store(store_path, embed_model):
+def load_store(s3_client, store_dir, embed_model):
     # Load FAISS index back
     print("LOADING")
-    for file in store_path.iterdir():
-        print(file)
+    faiss_file = store_dir + "index.faiss"
+    pickle_file = store_dir + "index.pkl"
 
-    return FAISS.load_local(store_path, embed_model,allow_dangerous_deserialization=True)
+    s3_client.download_file(faiss_file, faiss_file)
+    s3_client.download_file(pickle_file, pickle_file)
+    print("Loaded index files")
+    return FAISS.load_local(store_dir, embed_model,allow_dangerous_deserialization=True)
 
 
 async def check_storage():
@@ -115,18 +117,18 @@ async def check_storage():
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                  )
+    question_index = question_dir + "index.faiss"
 
-    question_path = Path(question_dir)
-    answer_path = Path(answer_dir)
-    if (not question_path.exists() or
-        not answer_path.exists()):
+    exists = s3_client.check_object_existence(question_index)
+
+    if not exists:
        print("STORING")
        await store_documents(s3_client, embed_model, question_dir, answer_dir)
     else:
         print("Retrieving stores")
 
-    question_store = load_store(question_path, embed_model)
-    answer_store = load_store(answer_path, embed_model)
+    question_store = load_store(s3_client, question_dir, embed_model)
+    answer_store = load_store(s3_client, answer_dir, embed_model)
 
     return question_store, answer_store
 

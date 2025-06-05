@@ -106,7 +106,7 @@ async def check_storage():
 
     global question_store, answer_store
 
-    parts = ["tmp","question","answer"]
+    parts = ["tmp","questions","answers"]
     question_path = Path("/" + parts[0] + "/" + parts[1] + "/")
     answer_path = Path("/" + parts[0] + "/" + parts[2] + "/")
     embed_model = OpenAIEmbeddings(
@@ -132,6 +132,10 @@ async def store_documents(embed_model, question_path, answer_path,answering_body
     df = pd.DataFrame(questions)
     df = populate_embeddable_questions(df)
     df = populate_embeddable_answers(df)
+
+    # temp storage for checkpoint
+    pq_path = Path(question_path , "pq.csv")
+    df.to_csv(pq_path)
 
     question_documents, answer_documents = create_documents(df)
     question_store = create_vector_store(question_documents, embed_model, question_path)

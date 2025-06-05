@@ -78,8 +78,8 @@ def create_documents(df):
     return question_documents, answer_documents
 
 
-def create_vector_store(s3_client, documents, embed_model, store_path):
-    print(f"Would store here {store_path}")
+def create_vector_store(s3_client, documents, embed_model, store_dir):
+    print(f"Would store here {store_dir}")
 
     vector_store = FAISS.from_documents(
                                       documents,
@@ -87,10 +87,10 @@ def create_vector_store(s3_client, documents, embed_model, store_path):
                                       distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT
                                       )
     # Save vector store
-    vector_store.save_local(store_path)
-    for file in store_path.iterdir():
-        print(file)
-    s3_client.upload_file(file)
+    vector_store.save_local(store_dir)
+
+    s3_client.upload_file(store_dir + "index.faiss")
+    s3_client.upload_file(store_dir + "index.pkl")
     return vector_store
 
 
@@ -121,7 +121,7 @@ async def check_storage():
     if (not question_path.exists() or
         not answer_path.exists()):
        print("STORING")
-       await store_documents(s3_client, embed_model, question_path, answer_path)
+       await store_documents(s3_client, embed_model, question_dir, answer_dir)
     else:
         print("Retrieving stores")
 
@@ -131,7 +131,7 @@ async def check_storage():
     return question_store, answer_store
 
 
-async def store_documents(s3_client, embed_model, question_path, answer_path,answering_body_id=13):
+async def store_documents(s3_client, embed_model, question_dir, answer_dir ,answering_body_id=13):
     print("Retrieving documents for storage")
     questions = get_all_question_details(answering_body_id)
     # use Pandas for text manipulation
@@ -144,8 +144,8 @@ async def store_documents(s3_client, embed_model, question_path, answer_path,ans
 #    df.to_csv(pq_path)
 
     question_documents, answer_documents = create_documents(df)
-    question_store = create_vector_store(s3_client, question_documents, embed_model, question_path)
-    answer_store = create_vector_store(s3_client, answer_documents, embed_model, answer_path)
+    question_store = create_vector_store(s3_client, question_documents, embed_model, question_dir)
+    answer_store = create_vector_store(s3_client, answer_documents, embed_model, answer_dir)
 
     return question_store, answer_store
 

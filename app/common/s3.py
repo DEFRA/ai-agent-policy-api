@@ -35,8 +35,8 @@ class S3Client:
 
     def check_object_existence(self, object_name):
         """Checks if the named object exists in the attached S3 bucket."""
+        print(f"About to test existence of {object_name}")
         try:
-            self.s3.head_bucket(Bucket=self.bucket_name)
             self.s3.head_object(Bucket=self.bucket_name, Key=object_name)
             print(f"{object_name} exists in {self.bucket_name}")
             return True

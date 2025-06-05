@@ -9,6 +9,7 @@ from langchain.vectorstores.utils import DistanceStrategy
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
+from app.common.s3 import S3Client
 from app.config import config as settings
 
 from .policy_retrieval import get_all_question_details
@@ -77,7 +78,7 @@ def create_documents(df):
     return question_documents, answer_documents
 
 
-def create_vector_store(documents, embed_model, store_path):
+def create_vector_store(s3_client, documents, embed_model, store_path):
     print(f"Would store here {store_path}")
 
     vector_store = FAISS.from_documents(
@@ -89,7 +90,7 @@ def create_vector_store(documents, embed_model, store_path):
     vector_store.save_local(store_path)
     for file in store_path.iterdir():
         print(file)
-
+    s3_client.upload_file(file)
     return vector_store
 
 
@@ -106,16 +107,30 @@ async def check_storage():
 
     global question_store, answer_store
 
+    s3_client = S3Client()
+
     parts = ["tmp","questions","answers"]
-    question_path = Path("/" + parts[0] + "/" + parts[1] + "/")
-    answer_path = Path("/" + parts[0] + "/" + parts[2] + "/")
+    question_dir = "/" + parts[0] + "/" + parts[1] + "/"
+    answer_dir = "/" + parts[0] + "/" + parts[2] + "/"
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                  )
+    q_pkl = question_dir + "index.pkl"
+    q_faiss = question_dir + "index.faiss"
+    s3_client.download_file(q_pkl, q_pkl)
+    s3_client.download_file(q_faiss, q_faiss)
+
+    a_pkl = answer_dir + "index.pkl"
+    a_faiss = answer_dir + "index.faiss"
+    s3_client.download_file(a_pkl, a_pkl)
+    s3_client.download_file(a_faiss, a_faiss)
+
+    question_path = Path(question_dir)
+    answer_path = Path(answer_dir)
     if (not question_path.exists() or
         not answer_path.exists()):
        print("STORING")
-       await store_documents(embed_model, question_path, answer_path)
+       await store_documents(s3_client, embed_model, question_path, answer_path)
     else:
         print("Retrieving stores")
 
@@ -125,7 +140,7 @@ async def check_storage():
     return question_store, answer_store
 
 
-async def store_documents(embed_model, question_path, answer_path,answering_body_id=13):
+async def store_documents(s3_client, embed_model, question_path, answer_path,answering_body_id=13):
     print("Retrieving documents for storage")
     questions = get_all_question_details(answering_body_id)
     # use Pandas for text manipulation
@@ -138,8 +153,8 @@ async def store_documents(embed_model, question_path, answer_path,answering_body
     df.to_csv(pq_path)
 
     question_documents, answer_documents = create_documents(df)
-    question_store = create_vector_store(question_documents, embed_model, question_path)
-    answer_store = create_vector_store(answer_documents, embed_model, answer_path)
+    question_store = create_vector_store(s3_client, question_documents, embed_model, question_path)
+    answer_store = create_vector_store(s3_client, answer_documents, embed_model, answer_path)
 
     return question_store, answer_store
 

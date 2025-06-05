@@ -145,9 +145,9 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
     # Get all question IDs
     print("Fetching all question IDs...")
     print(f"Params {answering_body_id}, {house}")
-    all_ids = get_all_question_ids(
-        answering_body_id=answering_body_id, house=house)
-#    all_ids = [1800970,1801047,1801645,1331280,1330773,1330618]
+#    all_ids = get_all_question_ids(
+#        answering_body_id=answering_body_id, house=house)
+    all_ids = [1800970,1801047,1801645,1331280,1330773,1330618]
 
     # Initialize list to store all question details
     all_questions = []

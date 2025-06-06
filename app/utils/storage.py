@@ -126,7 +126,7 @@ async def check_pq_ids():
     global pq_ids
 
     # hack to overcome ruff insistence on avoiding /tmp
-    parts = ["tmp","pq_questions","pq_ids.csv"]
+    parts = ["tmp","pq_ids","pq_ids.csv"]
     store_dir = "/" + parts[0] + "/" + parts[1] + "/"
 
     pq_ids_file = store_dir + parts[2]
@@ -148,7 +148,7 @@ async def check_pq_ids():
             with open(pq_ids_file, "w") as csvfile:
                 writer = csv.writer(csvfile)
                 for pid in pq_ids:
-                    writer.writerow(pid)
+                    writer.writerow(str(pid))
 
             s3_client.upload_file(pq_ids_file)
         except Exception as e:

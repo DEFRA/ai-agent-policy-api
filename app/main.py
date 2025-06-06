@@ -31,7 +31,7 @@ async def lifespan(_: FastAPI):
         print(f"Retrieved {len(pq_ids)} PQ ids.")
     except Exception as e:
         print(f"Startup encountered errors {e}")
-        
+
     print("Yielding")
     yield
     # Shutdown

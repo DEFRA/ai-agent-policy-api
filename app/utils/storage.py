@@ -125,7 +125,7 @@ async def check_storage():
 
     s3_client = S3Client()
 
-    parts = ["tmp","questions","answers"]
+    parts = ["tmp","pq_questions","pq_answers"]
     question_dir = "/" + parts[0] + "/" + parts[1] + "/"
     answer_dir = "/" + parts[0] + "/" + parts[2] + "/"
     embed_model = OpenAIEmbeddings(

@@ -152,9 +152,12 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
     # Initialize list to store all question details
     all_questions = []
 
+    error_count = 0
+
     # Process each ID
     for i, question_id in enumerate(all_ids, 1):
-
+        if error_count > 100:
+            break
         # Only print progress every 250 questions
         if i % 250 == 0 or i == 1:
             print(
@@ -170,6 +173,8 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
             else:
                 print(
                     f"Warning: No 'value' field found for question {question_id}")
+        else:
+            error_count += 1
 
         # Add a small delay to avoid overwhelming the API
         time.sleep(0.1)  # 100ms delay between requests

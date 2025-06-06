@@ -139,27 +139,47 @@ async def check_pq_ids():
         print("Retrieving ids")
         try:
             pq_ids = get_all_question_ids(answering_body_id=13, house="Commons")
-
+            print(f"Retrieved {len(pq_ids)} PQs from parliament api")
+        except Exception as e:
+            print(f"Error retrieving ids {e}")
+        try:
+            print(f"Checking for ids directory {store_dir}")
             store_path = Path(store_dir)
             if not store_path.exists():
                 store_path.mkdir()
                 print(f"Created directory {store_path}")
+            else:
+                print(f"Found {store_path}")
 
+        except Exception as e:
+            print(f"Error creating {store_path} directory: {e}")
+        try:
+            print(f"Writing csv file of ids {pq_ids_file}")
             with open(pq_ids_file, "w") as csvfile:
                 writer = csv.writer(csvfile)
                 for pid in pq_ids:
                     writer.writerow(str(pid))
+        except Exception as e:
+            print(f"Error storing ids in file {pq_ids_file}: {e}")
+        try:
+            print("Storing id file in S3")
 
             s3_client.upload_file(pq_ids_file)
         except Exception as e:
-            print(f"Error writing ids {e}")
+            print(f"Error storing  {pq_ids_file} in S3: {e}")
+
     else:
-        s3_client.download_file(pq_ids_file, pq_ids_file)
-        with open(pq_ids_file) as csvfile:
-            reader = csv.reader(csvfile)
-            for row in reader:
-                pq_ids.append(row[0])
-        print(f"Read {len(pq_ids)} PQ ids from file.")
+        try:
+            print(f"Downloading Ids file {pq_ids_file}")
+            s3_client.download_file(pq_ids_file, pq_ids_file)
+
+            with open(pq_ids_file) as csvfile:
+                reader = csv.reader(csvfile)
+                for row in reader:
+                    pq_ids.append(row[0])
+            print(f"Read {len(pq_ids)} PQ ids from file.")
+        except Exception as e:
+            print(f"Error downloading/reading {pq_ids_file} from S3: {e}")
 
     return pq_ids
 

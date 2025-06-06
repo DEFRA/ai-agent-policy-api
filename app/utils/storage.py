@@ -1,3 +1,4 @@
+import csv
 import os
 from logging import getLogger
 from pathlib import Path
@@ -125,7 +126,7 @@ async def check_pq_ids():
     global pq_ids
 
     # hack to overcome ruff insistence on avoiding /tmp
-    parts = ["tmp","pq_questions","pq_ids.txt"]
+    parts = ["tmp","pq_questions","pq_ids.csv"]
     store_dir = "/" + parts[0] + "/" + parts[1] + "/"
 
     pq_ids_file = store_dir + parts[2]
@@ -138,22 +139,27 @@ async def check_pq_ids():
         print("Retrieving ids")
         try:
             pq_ids = get_all_question_ids(answering_body_id=13, house="Commons")
+
             store_path = Path(store_dir)
             if not store_path.exists():
                 store_path.mkdir()
                 print(f"Created directory {store_path}")
 
-            with open(pq_ids_file, "w") as pids:
-                pids.writelines(pq_ids)
+            with open(pq_ids_file, "w") as csvfile:
+                writer = csv.writer(csvfile)
+                for pid in pq_ids:
+                    writer.writerow(pid)
 
             s3_client.upload_file(pq_ids_file)
         except Exception as e:
             print(f"Error writing ids {e}")
     else:
         s3_client.download_file(pq_ids_file, pq_ids_file)
-        with open(pq_ids_file) as pids:
-            pq_ids = pids.readlines()
-            print(f"Read {len(pq_ids)} ids from file.")
+        with open(pq_ids_file) as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                pq_ids.append(row[0])
+        print(f"Read {len(pq_ids)} PQ ids from file.")
 
     return pq_ids
 

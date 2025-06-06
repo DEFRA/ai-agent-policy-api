@@ -145,9 +145,13 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
     # Get all question IDs
     print("Fetching all question IDs...")
     print(f"Params {answering_body_id}, {house}")
-    all_ids = get_all_question_ids(
-        answering_body_id=answering_body_id, house=house)
-#    all_ids = [1800970,1801047,1801645,1331280,1330773,1330618]
+#    all_ids = get_all_question_ids(
+#        answering_body_id=answering_body_id, house=house)
+    all_ids = [1798613,1798075,1797992,1797598,1798009,1796692,1798097,1796902,1796972,1798010,
+               1796975,1798069,1798071,1796977,1797183,1798073,1797614,1796446,1797615,1796447,
+               1796349,1797684,1797286,1797862,1797984,1797983,1797982,1797981,1798119,1798158,
+               1798160,1797521,1796514,1796217,1795816,1794239,1793717,1791308,1788771,1788834,
+               1796687,1797297,1796348,1796363,1796442,1796440]
 
     # Initialize list to store all question details
     all_questions = []
@@ -156,7 +160,8 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
 
     # Process each ID
     for i, question_id in enumerate(all_ids, 1):
-        if error_count > 100:
+        if error_count > 10:
+            print(f"Exceeded error threshold {error_count}")
             break
         # Only print progress every 250 questions
         if i % 250 == 0 or i == 1:

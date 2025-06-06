@@ -128,7 +128,7 @@ async def check_pq_ids():
     parts = ["tmp","pq_questions","pq_ids.txt"]
     store_dir = "/" + parts[0] + "/" + parts[1] + "/"
 
-    pq_ids_file = "/".join(parts)
+    pq_ids_file = store_dir + parts[2]
 
     s3_client = S3Client()
 

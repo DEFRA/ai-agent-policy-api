@@ -12,13 +12,15 @@ from langchain_openai import OpenAIEmbeddings
 from app.common.s3 import S3Client
 from app.config import config as settings
 
-from .policy_retrieval import get_all_question_details
+from .policy_retrieval import get_all_question_details, get_all_question_ids
 
 QUESTION_STORE_FILE="question_store"
 ANSWER_STORE_FILE="answer_store"
 
 question_store = None
 answer_store = None
+
+pq_ids = []
 
 router = APIRouter(prefix="/policy")
 logger = getLogger(__name__)
@@ -119,12 +121,44 @@ def load_store(s3_client, store_dir, embed_model):
        return None
 
 
+async def check_pq_ids():
+    global pq_ids
+
+    # hack to overcome ruff insistence on avoiding /tmp
+    parts = ["tmp","pq_questions","pq_ids.txt"]
+    pq_ids_file = "/".join(parts)
+
+    s3_client = S3Client()
+
+    exists = s3_client.check_object_existence(pq_ids_file)
+
+    if not exists:
+        print("Retrieving ids")
+        try:
+            pq_ids = get_all_question_ids(answering_body_id=13, house="Commons")
+
+            with open(pq_ids_file, "w") as pids:
+                pids.writelines(pq_ids)
+
+            s3_client.upload_file(pq_ids_file)
+        except Exception as e:
+            print(f"Error writing ids {e}")
+    else:
+        s3_client.download_file(pq_ids_file, pq_ids_file)
+        with open(pq_ids_file) as pids:
+            pq_ids = pids.readlines()
+            print(f"Read {len(pq_ids)} ids from file.")
+
+    return pq_ids
+
+
 async def check_storage():
 
     global question_store, answer_store
 
     s3_client = S3Client()
 
+    # hack to overcome ruff insistence on avoiding /tmp
     parts = ["tmp","pq_questions","pq_answers"]
     question_dir = "/" + parts[0] + "/" + parts[1] + "/"
     answer_dir = "/" + parts[0] + "/" + parts[2] + "/"

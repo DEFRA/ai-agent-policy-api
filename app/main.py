@@ -17,18 +17,21 @@ logger = getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # Startup
-    print(f"S3_BUCKET: {config.S3_BUCKET}")
-    s3_client = S3Client()
-    s3_client.check_connection()
+    try:
+        print(f"S3_BUCKET: {config.S3_BUCKET}")
+        s3_client = S3Client()
+        s3_client.check_connection()
 
-    client = await get_mongo_client()
-    logger.info("MongoDB client connected")
+        client = await get_mongo_client()
+        logger.info("MongoDB client connected")
 
-    question_store, answer_store = await check_storage()
+        question_store, answer_store = await check_storage()
 
-    pq_ids = await check_pq_ids()
-    print(f"Retrieved {len(pq_ids)} PQ ids.")
-
+        pq_ids = await check_pq_ids()
+        print(f"Retrieved {len(pq_ids)} PQ ids.")
+    except Exception as e:
+        print(f"Startup encountered errors {e}")
+        
     print("Yielding")
     yield
     # Shutdown

@@ -126,6 +126,8 @@ async def check_pq_ids():
 
     # hack to overcome ruff insistence on avoiding /tmp
     parts = ["tmp","pq_questions","pq_ids.txt"]
+    store_dir = "/" + parts[0] + "/" + parts[1] + "/"
+
     pq_ids_file = "/".join(parts)
 
     s3_client = S3Client()
@@ -136,6 +138,10 @@ async def check_pq_ids():
         print("Retrieving ids")
         try:
             pq_ids = get_all_question_ids(answering_body_id=13, house="Commons")
+            store_path = Path(store_dir)
+            if not store_path.exists():
+                store_path.mkdir()
+                print(f"Created directory {store_path}")
 
             with open(pq_ids_file, "w") as pids:
                 pids.writelines(pq_ids)

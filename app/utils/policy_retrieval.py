@@ -185,3 +185,49 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
         time.sleep(0.1)  # 100ms delay between requests
 
     return all_questions
+
+
+def get_specific_question_details(pq_ids):
+    """
+    Fetch detailed information for all questions and save to a DataFrame
+    Args:
+        answering_body_id (int, optional): Specific answering body ID to filter by
+        house (str, optional): House to query ('Commons' or 'Lords')
+    Returns:
+        pd.DataFrame: DataFrame containing all question details
+    """
+    # Get all question IDs
+    print("Fetching PQs")
+
+    # Initialize list to store all question details
+    all_questions = []
+
+    error_count = 0
+
+    # Process each ID
+    for i, question_id in enumerate(pq_ids, 1):
+        if error_count > 10:
+            print(f"Exceeded error threshold {error_count}")
+            break
+        # Only print progress every 250 questions
+        if i % 250 == 0 or i == 1:
+            print(
+                f"Processing question {i}/{len(pq_ids)} (ID: {question_id})")
+
+        # Get question details
+        question_data = get_question_details(question_id)
+
+        if question_data:
+            # Extract the 'value' field which contains the actual question data
+            if "value" in question_data:
+                all_questions.append(question_data["value"])
+            else:
+                print(
+                    f"Warning: No 'value' field found for question {question_id}")
+        else:
+            error_count += 1
+
+        # Add a small delay to avoid overwhelming the API
+        time.sleep(0.1)  # 100ms delay between requests
+
+    return all_questions

@@ -4,12 +4,15 @@ from logging import getLogger
 from fastapi import FastAPI
 
 from app.common.mongo import get_mongo_client
-from app.common.s3 import S3Client
+
+#from app.common.s3 import S3Client
 from app.common.tracing import TraceIdMiddleware
 from app.config import config
 from app.health.router import router as health_router
 from app.policy.router import router as policy_router
-from app.utils.storage import check_pq_ids, check_storage
+
+#rom app.utils.storage import check_pq_ids, check_storage
+from app.utils.storage import check_storage
 
 logger = getLogger(__name__)
 
@@ -17,30 +20,29 @@ logger = getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # Startup
-    try:
-        print(f"S3_BUCKET: {config.S3_BUCKET}")
-        s3_client = S3Client()
-        s3_client.check_connection()
+    print(f"S3_BUCKET: {config.S3_BUCKET}")
+    """
+    s3_client = S3Client()
+    s3_ok = s3_client.check_connection()
+    """
+    client = await get_mongo_client()
+    logger.info("MongoDB client connected")
 
-        client = await get_mongo_client()
-        logger.info("MongoDB client connected")
+    question_store, answer_store = await check_storage()
 
-        question_store, answer_store = await check_storage()
+ #       pq_ids = await check_pq_ids()
+ #       print(f"Retrieved {len(pq_ids)} PQ ids.")
 
-        pq_ids = await check_pq_ids()
-        print(f"Retrieved {len(pq_ids)} PQ ids.")
-    except Exception as e:
-        print(f"Startup encountered errors {e}")
 
     print("Yielding")
     yield
     # Shutdown
     print("Exiting")
-
+    """
     if s3_client:
         s3_client.close_connection()
         logger.info("S3 client closed")
-
+    """
     if client:
         await client.close()
         logger.info("MongoDB client closed")

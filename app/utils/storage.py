@@ -200,7 +200,7 @@ async def check_storage():
     s3_client = S3Client()
 
     # hack to overcome ruff insistence on avoiding /tmp
-    parts = ["tmp","pq_questions","pq_answers"]
+    parts = ["tmp","pq_questions_1","pq_answers_1"]
     question_dir = "/" + parts[0] + "/" + parts[1] + "/"
     answer_dir = "/" + parts[0] + "/" + parts[2] + "/"
     embed_model = OpenAIEmbeddings(

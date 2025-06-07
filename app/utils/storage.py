@@ -122,6 +122,19 @@ def load_store(s3_client, store_dir, embed_model):
        return None
 
 
+def create_directory_if_necessary(directory_name):
+    try:
+        print(f"Checking for ids directory {directory_name}")
+        path = Path(directory_name)
+        if not path.exists():
+            path.mkdir()
+            print(f"Created directory {path}")
+        else:
+            print(f"Found {path}")
+
+    except Exception as e:
+        print(f"Error creating {path} directory: {e}")
+
 async def check_pq_ids():
     global pq_ids
 
@@ -142,17 +155,9 @@ async def check_pq_ids():
             print(f"Retrieved {len(pq_ids)} PQs from parliament api")
         except Exception as e:
             print(f"Error retrieving ids {e}")
-        try:
-            print(f"Checking for ids directory {store_dir}")
-            store_path = Path(store_dir)
-            if not store_path.exists():
-                store_path.mkdir()
-                print(f"Created directory {store_path}")
-            else:
-                print(f"Found {store_path}")
 
-        except Exception as e:
-            print(f"Error creating {store_path} directory: {e}")
+        create_directory_if_necessary(store_dir)
+
         try:
             print(f"Writing csv file of ids {pq_ids_file}")
             with open(pq_ids_file, "w") as csvfile:
@@ -169,6 +174,9 @@ async def check_pq_ids():
             print(f"Error storing  {pq_ids_file} in S3: {e}")
 
     else:
+        print(f"Checking for ids directory {store_dir} before download of ids file")
+        create_directory_if_necessary(store_dir)
+
         try:
             print(f"Downloading Ids file {pq_ids_file}")
             s3_client.download_file(pq_ids_file, pq_ids_file)

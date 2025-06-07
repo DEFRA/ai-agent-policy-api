@@ -13,7 +13,8 @@ from langchain_openai import OpenAIEmbeddings
 from app.common.s3 import S3Client
 from app.config import config as settings
 
-from .policy_retrieval import get_all_question_details, get_all_question_ids
+#from .policy_retrieval import get_all_question_details, get_all_question_ids
+from .policy_retrieval import get_all_question_ids, get_specific_question_details
 
 QUESTION_STORE_FILE="question_store"
 ANSWER_STORE_FILE="answer_store"
@@ -135,7 +136,7 @@ def create_directory_if_necessary(directory_name):
     except Exception as e:
         print(f"Error creating {path} directory: {e}")
 
-async def check_pq_ids():
+async def get_pq_ids():
     global pq_ids
 
     # hack to overcome ruff insistence on avoiding /tmp
@@ -221,9 +222,12 @@ async def check_storage():
     return question_store, answer_store
 
 
-async def store_documents(s3_client, embed_model, question_dir, answer_dir ,answering_body_id=13):
+#async def store_documents(s3_client, embed_model, question_dir, answer_dir ,answering_body_id=13):
+async def store_documents(s3_client, embed_model, question_dir, answer_dir):
     print("Retrieving documents for storage")
-    questions = get_all_question_details(answering_body_id)
+
+#    questions = get_all_question_details(answering_body_id)
+    questions = get_specific_question_details(pq_ids)
     # use Pandas for text manipulation
     df = pd.DataFrame(questions)
     df = populate_embeddable_questions(df)

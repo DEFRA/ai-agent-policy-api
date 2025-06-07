@@ -227,7 +227,8 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
     print("Retrieving documents for storage")
 
 #    questions = get_all_question_details(answering_body_id)
-    questions = get_specific_question_details(get_pq_ids())
+    pq_ids = await get_pq_ids()
+    questions = get_specific_question_details(pq_ids)
     print(f"Extracted {len(questions)} PQs")
     # use Pandas for text manipulation
     try:

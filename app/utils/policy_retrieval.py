@@ -198,7 +198,7 @@ def get_specific_question_details(pq_ids):
     """
     # Get all question IDs
     print("Fetching PQs")
-
+    print(pq_ids)
     # Initialize list to store all question details
     all_questions = []
 

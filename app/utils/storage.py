@@ -228,18 +228,22 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
 
 #    questions = get_all_question_details(answering_body_id)
     questions = get_specific_question_details(pq_ids)
+    print(questions)
     # use Pandas for text manipulation
-    df = pd.DataFrame(questions)
-    df = populate_embeddable_questions(df)
-    df = populate_embeddable_answers(df)
+    try:
+        df = pd.DataFrame(questions)
+        df = populate_embeddable_questions(df)
+        df = populate_embeddable_answers(df)
 
     # temp storage for checkpoint
 #    pq_path = Path(question_path , "pq.csv")
 #    df.to_csv(pq_path)
 
-    question_documents, answer_documents = create_documents(df)
-    question_store = create_vector_store(s3_client, question_documents, embed_model, question_dir)
-    answer_store = create_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+        question_documents, answer_documents = create_documents(df)
+        question_store = create_vector_store(s3_client, question_documents, embed_model, question_dir)
+        answer_store = create_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+    except Exception as e:
+        print(f"Failed to set Dataframe {e}")
 
     return question_store, answer_store
 

@@ -63,7 +63,7 @@ def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons
         return []
 
 
-def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=10_000):
+def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=1_000):
     """
     Fetch all written question IDs from the Parliament API, handling pagination
     Args:
@@ -84,7 +84,8 @@ def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=10_
             take=batch_size,
             house=house
         )
-
+        # terminate after first batch
+        break
         if not batch_ids:  # If we get no results, we've reached the end
             break
 

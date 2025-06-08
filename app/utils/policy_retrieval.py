@@ -90,6 +90,7 @@ def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=1_0
 
         all_ids.extend(batch_ids)
         print(f"Retrieved {len(batch_ids)} IDs in this batch")
+        print(all_ids)
         break
         if len(batch_ids) < batch_size:  # If we got fewer results than requested, we've reached the end
             break

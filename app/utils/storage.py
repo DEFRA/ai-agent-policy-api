@@ -16,8 +16,13 @@ from app.config import config as settings
 #from .policy_retrieval import get_all_question_details, get_all_question_ids
 from .policy_retrieval import get_all_question_ids, get_specific_question_details
 
-QUESTION_STORE_FILE="question_store"
-ANSWER_STORE_FILE="answer_store"
+QUESTION_STORE_DIR="/question_store_1/"
+ANSWER_STORE_DIR="/answer_store_1/"
+
+TMP = "tmp"
+
+IDS_FILE = "pq_ids.csv"
+
 
 question_store = None
 answer_store = None
@@ -140,10 +145,8 @@ async def get_pq_ids():
     global pq_ids
 
     # hack to overcome ruff insistence on avoiding /tmp
-    parts = ["tmp","pq_ids","pq_ids_1.csv"]
-    store_dir = "/" + parts[0] + "/" + parts[1] + "/"
-
-    pq_ids_file = store_dir + parts[2]
+    store_dir = "/" + TMP + QUESTION_STORE_DIR
+    pq_ids_file = store_dir + IDS_FILE
 
     s3_client = S3Client()
 
@@ -200,9 +203,10 @@ async def check_storage():
     s3_client = S3Client()
 
     # hack to overcome ruff insistence on avoiding /tmp
-    parts = ["tmp","pq_questions_1","pq_answers_1"]
-    question_dir = "/" + parts[0] + "/" + parts[1] + "/"
-    answer_dir = "/" + parts[0] + "/" + parts[2] + "/"
+
+    question_dir = "/" + TMP + QUESTION_STORE_DIR
+    answer_dir = "/" + TMP + ANSWER_STORE_DIR
+
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                  )
@@ -224,10 +228,16 @@ async def check_storage():
 
 #async def store_documents(s3_client, embed_model, question_dir, answer_dir ,answering_body_id=13):
 async def store_documents(s3_client, embed_model, question_dir, answer_dir):
+
+    global question_store, answer_store
+
     print("Retrieving documents for storage")
 
 #    questions = get_all_question_details(answering_body_id)
     pq_ids = await get_pq_ids()
+    if len(pq_ids) > 0:
+        print(f"First PQ id {pq_ids[0]}")
+
     questions = get_specific_question_details(pq_ids)
     print(f"Extracted {len(questions)} PQs")
     # use Pandas for text manipulation
@@ -235,6 +245,8 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
         df = pd.DataFrame(questions)
         df = populate_embeddable_questions(df)
         df = populate_embeddable_answers(df)
+        print(df.columns)
+        print(df.shape)
 
     # temp storage for checkpoint
 #    pq_path = Path(question_path , "pq.csv")
@@ -245,8 +257,6 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
         answer_store = create_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:
         print(f"Failed to set Dataframe {e}")
-
-    return question_store, answer_store
 
 
 def get_question_match(question, limit):

@@ -199,7 +199,7 @@ def get_specific_question_details(pq_ids):
     """
     # Get all question IDs
     print("Fetching PQs")
-    print(pq_ids)
+
     # Initialize list to store all question details
     all_questions = []
 
@@ -207,7 +207,7 @@ def get_specific_question_details(pq_ids):
 
     # Process each ID
     for i, question_id in enumerate(pq_ids, 1):
-        if error_count > 10:
+        if error_count > 100:
             print(f"Exceeded error threshold {error_count}")
             break
         # Only print progress every 250 questions
@@ -229,6 +229,6 @@ def get_specific_question_details(pq_ids):
             error_count += 1
 
         # Add a small delay to avoid overwhelming the API
-        time.sleep(0.1)  # 100ms delay between requests
+        time.sleep(0.2)  # 200ms delay between requests
 
     return all_questions

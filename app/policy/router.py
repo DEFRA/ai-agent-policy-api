@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.common.http_client import async_client
 from app.common.mongo import get_db
-from app.utils.storage import get_answer_match, get_question_match
+from app.utils.storage import add_documents, get_answer_match, get_question_match
 
 router = APIRouter(prefix="/policy")
 logger = getLogger(__name__)
@@ -118,6 +118,19 @@ async def search_answers(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error performing search: {str(e)}") from e
+
+
+@router.get("/update")
+async def add_questions(
+    count: int = Query(..., description="The number of documents to add")
+    ):
+    """Add a number of documents to the store using the saved ids"""
+
+    try:
+        add_documents(count)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error adding {count} documents: {str(e)}") from e
 
 
 @router.get("/db")

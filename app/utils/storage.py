@@ -1,4 +1,4 @@
-#import csv
+import csv
 import os
 from logging import getLogger
 from pathlib import Path
@@ -13,8 +13,9 @@ from langchain_openai import OpenAIEmbeddings
 from app.common.s3 import S3Client
 from app.config import config as settings
 
-#from .policy_retrieval import get_all_question_ids, get_specific_question_details
-from .policy_retrieval import get_specific_question_details
+from .policy_retrieval import get_all_question_ids, get_specific_question_details
+
+#from .policy_retrieval import get_specific_question_details
 
 QUESTION_STORE_DIR="/question_store_3/"
 ANSWER_STORE_DIR="/answer_store_3/"
@@ -103,6 +104,27 @@ def create_vector_store(s3_client, documents, embed_model, store_dir):
     return vector_store
 
 
+def update_vector_store(s3_client, documents, embed_model, store_dir):
+    print(f"Locating store here {store_dir}")
+
+    try:
+       vector_store = FAISS.load_local(store_dir, embed_model, allow_dangerous_deserialization=True)
+       print(f"Loaded FAISS from {store_dir}")
+
+    except Exception as e:
+       print(f"Error loading FAISS: {e}")
+       return None
+
+    vector_store.add_documents(documents=documents)
+    # Save vector store
+    vector_store.save_local(store_dir)
+
+    s3_client.upload_file(store_dir + "index.faiss")
+    s3_client.upload_file(store_dir + "index.pkl")
+
+    return vector_store
+
+
 def load_store(s3_client, store_dir, embed_model):
     # Load FAISS index back
     store_path = Path(store_dir)
@@ -141,9 +163,44 @@ def create_directory_if_necessary(directory_name):
     except Exception as e:
         print(f"Error creating {path} directory: {e}")
 
+
+async def add_documents(count: int):
+    """Add the specified number of documents to the stores."""
+
+    global question_store, answer_store
+
+    question_dir = "/" + TMP + QUESTION_STORE_DIR
+    answer_dir = "/" + TMP + ANSWER_STORE_DIR
+
+    s3_client = S3Client()
+
+    # kludge to test document addition
+
+    pq_ids = await get_pq_ids()
+    questions = get_specific_question_details(pq_ids[:count])
+    try:
+        df = pd.DataFrame(questions)
+        df = populate_embeddable_questions(df)
+        df = populate_embeddable_answers(df)
+        print(f"PQ dataframe : {df.shape}")
+    except Exception as e:
+        print(f"Failed to set Dataframe {e}")
+        return
+
+    try:
+        embed_model = OpenAIEmbeddings(
+                       model="text-embedding-3-small",
+                    )
+
+        question_documents, answer_documents = create_documents(df)
+        question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+        answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+    except Exception as e:
+        print(f"Failed to update stores {e}")
+
 async def get_pq_ids():
     global pq_ids
-    """
+
     # hack to overcome ruff insistence on avoiding /tmp
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     pq_ids_file = store_dir + IDS_FILE
@@ -198,6 +255,7 @@ async def get_pq_ids():
                1796349,1797684,1797286,1797862,1797984,1797983,1797982,1797981,1798119,1798158,
                1798160,1797521,1796514,1796217,1795816,1794239,1793717,1791308,1788771,1788834,
                1796687,1797297,1796348,1796363,1796442,1796440]
+    """
     return pq_ids
 
 
@@ -253,16 +311,16 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
         df = populate_embeddable_questions(df)
         df = populate_embeddable_answers(df)
         print(f"PQ dataframe : {df.shape}")
-
-    # temp storage for checkpoint
-#    pq_path = Path(question_path , "pq.csv")
-#    df.to_csv(pq_path)
-
-        question_documents, answer_documents = create_documents(df)
-        question_store = create_vector_store(s3_client, question_documents, embed_model, question_dir)
-        answer_store = create_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:
         print(f"Failed to set Dataframe {e}")
+        return None
+
+    try:
+        question_documents, answer_documents = create_documents(df)
+        question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+        answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+    except Exception as e:
+        print(f"Failed to update stores {e}")
 
     return question_store, answer_store
 

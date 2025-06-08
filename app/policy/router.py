@@ -127,7 +127,7 @@ async def add_questions(
     """Add a number of documents to the store using the saved ids"""
 
     try:
-        add_documents(count)
+        await add_documents(count)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error adding {count} documents: {str(e)}") from e

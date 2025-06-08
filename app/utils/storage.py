@@ -16,12 +16,12 @@ from app.config import config as settings
 #from .policy_retrieval import get_all_question_details, get_all_question_ids
 from .policy_retrieval import get_all_question_ids, get_specific_question_details
 
-QUESTION_STORE_DIR="/question_store_2/"
-ANSWER_STORE_DIR="/answer_store_2/"
+QUESTION_STORE_DIR="/question_store_3/"
+ANSWER_STORE_DIR="/answer_store_3/"
 
 TMP = "tmp"
 
-IDS_FILE = "pq_ids_1.csv"
+IDS_FILE = "pq_ids_3.csv"
 
 
 question_store = None
@@ -108,7 +108,7 @@ def load_store(s3_client, store_dir, embed_model):
     store_path = Path(store_dir)
     if not store_path.exists():
         store_path.mkdir()
-        print(f"Created directory {store_path}")
+        print(f"load_store:: Created directory {store_path}")
 
     print("LOADING")
     faiss_file = store_dir + "index.faiss"

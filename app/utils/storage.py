@@ -188,7 +188,7 @@ async def get_pq_ids():
             with open(pq_ids_file) as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
-                    pq_ids.append(row[0])
+                    pq_ids.append(int(row))
             print(f"Read {len(pq_ids)} PQ ids from file.")
         except Exception as e:
             print(f"Error downloading/reading {pq_ids_file} from S3: {e}")
@@ -257,6 +257,8 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
         answer_store = create_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:
         print(f"Failed to set Dataframe {e}")
+
+    return question_store, answer_store
 
 
 def get_question_match(question, limit):

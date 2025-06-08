@@ -140,7 +140,7 @@ async def get_pq_ids():
     global pq_ids
 
     # hack to overcome ruff insistence on avoiding /tmp
-    parts = ["tmp","pq_ids","small_pq_ids.csv"]
+    parts = ["tmp","pq_ids","pq_ids_1.csv"]
     store_dir = "/" + parts[0] + "/" + parts[1] + "/"
 
     pq_ids_file = store_dir + parts[2]

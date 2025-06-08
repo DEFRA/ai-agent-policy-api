@@ -1,4 +1,4 @@
-import csv
+#import csv
 import os
 from logging import getLogger
 from pathlib import Path
@@ -13,8 +13,8 @@ from langchain_openai import OpenAIEmbeddings
 from app.common.s3 import S3Client
 from app.config import config as settings
 
-#from .policy_retrieval import get_all_question_details, get_all_question_ids
-from .policy_retrieval import get_all_question_ids, get_specific_question_details
+#from .policy_retrieval import get_all_question_ids, get_specific_question_details
+from .policy_retrieval import get_specific_question_details
 
 QUESTION_STORE_DIR="/question_store_3/"
 ANSWER_STORE_DIR="/answer_store_3/"
@@ -97,11 +97,9 @@ def create_vector_store(s3_client, documents, embed_model, store_dir):
                                       )
     # Save vector store
     vector_store.save_local(store_dir)
-# remove S3 for now
-# to placate ruff
-    print(s3_client)
-#    s3_client.upload_file(store_dir + "index.faiss")
-#    s3_client.upload_file(store_dir + "index.pkl")
+
+    s3_client.upload_file(store_dir + "index.faiss")
+    s3_client.upload_file(store_dir + "index.pkl")
     return vector_store
 
 
@@ -145,7 +143,7 @@ def create_directory_if_necessary(directory_name):
 
 async def get_pq_ids():
     global pq_ids
-
+    """
     # hack to overcome ruff insistence on avoiding /tmp
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     pq_ids_file = store_dir + IDS_FILE
@@ -194,7 +192,12 @@ async def get_pq_ids():
             print(f"Read {len(pq_ids)} PQ ids from file.")
         except Exception as e:
             print(f"Error downloading/reading {pq_ids_file} from S3: {e}")
-
+    """
+    pq_ids = [1798613,1798075,1797992,1797598,1798009,1796692,1798097,1796902,1796972,1798010,
+               1796975,1798069,1798071,1796977,1797183,1798073,1797614,1796446,1797615,1796447,
+               1796349,1797684,1797286,1797862,1797984,1797983,1797982,1797981,1798119,1798158,
+               1798160,1797521,1796514,1796217,1795816,1794239,1793717,1791308,1788771,1788834,
+               1796687,1797297,1796348,1796363,1796442,1796440]
     return pq_ids
 
 
@@ -214,9 +217,7 @@ async def check_storage():
                  )
     question_index = question_dir + "index.faiss"
 
-#    exists = s3_client.check_object_existence(question_index)
-#   remove S3 stuff for now
-    exists = Path(question_index).exists()
+    exists = s3_client.check_object_existence(question_index)
 
     if not exists:
        print("STORING")
@@ -225,9 +226,9 @@ async def check_storage():
        print(f"Created answer store {answer_store}")
     else:
         print("Retrieving stores")
-# remove s3 accesses
-#    question_store = load_store(s3_client, question_dir, embed_model)
-#    answer_store = load_store(s3_client, answer_dir, embed_model)
+
+    question_store = load_store(s3_client, question_dir, embed_model)
+    answer_store = load_store(s3_client, answer_dir, embed_model)
 
     return question_store, answer_store
 

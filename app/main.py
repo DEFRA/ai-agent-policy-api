@@ -10,7 +10,7 @@ from app.common.tracing import TraceIdMiddleware
 from app.config import config
 from app.health.router import router as health_router
 from app.policy.router import router as policy_router
-from app.utils.storage import check_storage, get_pq_ids
+from app.utils.storage import check_storage
 
 logger = getLogger(__name__)
 
@@ -27,10 +27,6 @@ async def lifespan(_: FastAPI):
     logger.info("MongoDB client connected")
 
     question_store, answer_store = await check_storage()
-
-    pq_ids = await get_pq_ids()
-    print(f"Retrieved {len(pq_ids)} PQ ids.")
-
 
     print("Yielding")
     yield

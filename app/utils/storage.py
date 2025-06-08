@@ -16,12 +16,12 @@ from app.config import config as settings
 #from .policy_retrieval import get_all_question_details, get_all_question_ids
 from .policy_retrieval import get_all_question_ids, get_specific_question_details
 
-QUESTION_STORE_DIR="/question_store_1/"
-ANSWER_STORE_DIR="/answer_store_1/"
+QUESTION_STORE_DIR="/question_store_2/"
+ANSWER_STORE_DIR="/answer_store_2/"
 
 TMP = "tmp"
 
-IDS_FILE = "pq_ids.csv"
+IDS_FILE = "pq_ids_1.csv"
 
 
 question_store = None
@@ -167,7 +167,7 @@ async def get_pq_ids():
             with open(pq_ids_file, "w") as csvfile:
                 writer = csv.writer(csvfile)
                 for pid in pq_ids:
-                    writer.writerow(str(pid))
+                    writer.writerow([pid])
         except Exception as e:
             print(f"Error storing ids in file {pq_ids_file}: {e}")
         try:
@@ -188,8 +188,7 @@ async def get_pq_ids():
             with open(pq_ids_file) as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
- #                   pq_ids.append(int(row))
-                    print(row)
+                    pq_ids.append(int(row[0]))
             print(f"Read {len(pq_ids)} PQ ids from file.")
         except Exception as e:
             print(f"Error downloading/reading {pq_ids_file} from S3: {e}")

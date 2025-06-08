@@ -107,13 +107,7 @@ def create_vector_store(s3_client, documents, embed_model, store_dir):
 def update_vector_store(s3_client, documents, embed_model, store_dir):
     print(f"Locating store here {store_dir}")
 
-    try:
-       vector_store = FAISS.load_local(store_dir, embed_model, allow_dangerous_deserialization=True)
-       print(f"Loaded FAISS from {store_dir}")
-
-    except Exception as e:
-       print(f"Error loading FAISS: {e}")
-       return None
+    vector_store = load_store(s3_client, store_dir, embed_model)
 
     vector_store.add_documents(documents=documents)
     # Save vector store

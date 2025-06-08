@@ -188,7 +188,8 @@ async def get_pq_ids():
             with open(pq_ids_file) as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
-                    pq_ids.append(int(row))
+ #                   pq_ids.append(int(row))
+                    print(row)
             print(f"Read {len(pq_ids)} PQ ids from file.")
         except Exception as e:
             print(f"Error downloading/reading {pq_ids_file} from S3: {e}")

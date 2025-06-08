@@ -65,7 +65,7 @@ class S3Client:
             print(f"File {object_name} downloaded as {file_name}")
         except Exception as e:
 #            logger.info(f"Download failed: {e}")
-            print(f"Download failed: {e}")
+            print(f"Download failed for object {object_name} with file name {file_name} : {e}")
 
     def close_connection(self):
         """Closes the S3 client connection."""

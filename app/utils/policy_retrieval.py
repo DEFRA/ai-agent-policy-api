@@ -197,7 +197,7 @@ def get_specific_question_details(pq_ids):
         pd.DataFrame: DataFrame containing all question details
     """
     # Get all question IDs
-    print("Fetching PQs")
+    print(f"Fetching PQs ids: {pq_ids}")
 
     # Initialize list to store all question details
     all_questions = []
@@ -206,6 +206,7 @@ def get_specific_question_details(pq_ids):
 
     # Process each ID
     for i, question_id in enumerate(pq_ids, 1):
+        print(f"Retrieving PQ id {question_id}")
         if error_count > 100:
             print(f"Exceeded error threshold {error_count}")
             break

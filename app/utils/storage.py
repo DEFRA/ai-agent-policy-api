@@ -175,7 +175,8 @@ async def add_documents(count: int, offset: int):
 
     # batches of 1 to avoid silly exclusions
     for i in range(offset, count + offset):
-        questions = get_specific_question_details(pq_ids[i])
+        print(f"Retrieving index {i}")
+        questions = get_specific_question_details([pq_ids[i]])
         try:
             df = pd.DataFrame(questions)
             df = populate_embeddable_questions(df)

@@ -113,6 +113,9 @@ def update_vector_store(s3_client, documents, embed_model, store_dir):
     # Save vector store
     vector_store.save_local(store_dir)
 
+    num_documents = len(vector_store.index_to_docstore_id)
+    print(f"Total number of documents: {num_documents}")
+
     s3_client.upload_file(store_dir + "index.faiss")
     s3_client.upload_file(store_dir + "index.pkl")
 

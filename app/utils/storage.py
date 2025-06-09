@@ -22,7 +22,7 @@ ANSWER_STORE_DIR="/answer_store_3/"
 
 TMP = "tmp"
 
-IDS_FILE = "pq_ids_3.csv"
+IDS_FILE = "pq_ids_4.csv"
 
 
 question_store = None
@@ -59,7 +59,7 @@ def create_documents(df):
     answer_documents = []
 
     for _index, question in df.iterrows():
-        print(f"Creating embedding for {question['id']}")
+#        print(f"Creating embedding for {question['id']}")
         try:
             question_documents.append(
                 Document(
@@ -158,7 +158,7 @@ def create_directory_if_necessary(directory_name):
         print(f"Error creating {path} directory: {e}")
 
 
-async def add_documents(count: int):
+async def add_documents(count: int, offset: int):
     """Add the specified number of documents to the stores."""
 
     global question_store, answer_store
@@ -168,29 +168,28 @@ async def add_documents(count: int):
 
     s3_client = S3Client()
 
-    # kludge to test document addition
-
     pq_ids = await get_pq_ids()
-    questions = get_specific_question_details(pq_ids[:count])
-    try:
-        df = pd.DataFrame(questions)
-        df = populate_embeddable_questions(df)
-        df = populate_embeddable_answers(df)
-        print(f"PQ dataframe : {df.shape}")
-    except Exception as e:
-        print(f"Failed to set Dataframe {e}")
-        return
-
-    try:
-        embed_model = OpenAIEmbeddings(
+    embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                     )
 
-        question_documents, answer_documents = create_documents(df)
-        question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-        answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
-    except Exception as e:
-        print(f"Failed to update stores {e}")
+    # batches of 1 to avoid silly exclusions
+    for i in range(offset, count + offset):
+        questions = get_specific_question_details(pq_ids[i])
+        try:
+            df = pd.DataFrame(questions)
+            df = populate_embeddable_questions(df)
+            df = populate_embeddable_answers(df)
+        except Exception as e:
+            print(f"Failed to set Dataframe {e}")
+            return
+
+        try:
+            question_documents, answer_documents = create_documents(df)
+            question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+            answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+        except Exception as e:
+            print(f"Failed to update stores with {questions[0]} : {e}")
 
 async def get_pq_ids():
     global pq_ids
@@ -304,7 +303,6 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
         df = pd.DataFrame(questions)
         df = populate_embeddable_questions(df)
         df = populate_embeddable_answers(df)
-        print(f"PQ dataframe : {df.shape}")
     except Exception as e:
         print(f"Failed to set Dataframe {e}")
         return None

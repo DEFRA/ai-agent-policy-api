@@ -122,15 +122,16 @@ async def search_answers(
 
 @router.get("/update")
 async def add_questions(
-    count: int = Query(..., description="The number of documents to add")
+    count: int = Query(..., description="The number of documents to add"),
+    offset: int = Query(..., description="The number of ids to skip before retrieval")
     ):
     """Add a number of documents to the store using the saved ids"""
 
     try:
-        await add_documents(count)
+        await add_documents(count, offset)
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error adding {count} documents: {str(e)}") from e
+            status_code=500, detail=f"Error adding {count} documents with offset {offset}: {str(e)}") from e
 
 
 @router.get("/db")

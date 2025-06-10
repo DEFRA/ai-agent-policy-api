@@ -28,6 +28,20 @@ async def root():
     logger.info("TEST ENDPOINT")
     return {"ok": True}
 
+@router.get("/")
+async def root():
+    """Root endpoint returning API information"""
+    return {
+        "message": "Semantic Search API",
+        "version": "1.0.0",
+        "endpoints": [
+            "/search/questions",
+            "/search/answers",
+            "/chat/semantic",
+            "/health"
+        ]
+    }
+
 
 @router.get("/pq")
 async def get_question(

@@ -8,6 +8,7 @@ langchain-core
 langchain-openai
 langchain
 langchain-community
+langgraph
 faiss-cpu
 requests
 pandas

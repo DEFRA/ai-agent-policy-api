@@ -34,7 +34,10 @@ router = APIRouter(prefix="/policy")
 logger = getLogger(__name__)
 
 
-def populate_embeddable_questions(df):
+def populate_embeddable_questions(df: pd.DataFrame) -> pd.DataFrame:
+    """Split the question on variants of "Affairs", and set the
+    embeddable_question column to the remaining part of the question.
+    """
     df_split = df["questionText"].str.split(r"(?i)\baffairs\b[, ]*", n=1, expand=True)
 
     df.loc[df["questionText"].str.contains(r"(?i)\baffairs\b[, ]*", regex=True), "embeddable_question"] = df_split[1].fillna("")
@@ -42,14 +45,16 @@ def populate_embeddable_questions(df):
 
     return df
 
-def populate_embeddable_answers(df):
-
+def populate_embeddable_answers(df: pd.DataFrame) -> pd.DataFrame:
+    """Replace the paragraph markers in the answer text with white space
+    to reduce the "noise" in the text.
+    """
     df["answerText"] = df["answerText"].replace(to_replace="<p>", value=" ")
     df["answerText"] = df["answerText"].replace(to_replace="</p>", value=" ")
     return df
 
 
-def create_documents(df):
+def create_documents(df: pd.DataFrame) -> tuple(list[Document],list[Document]):
     print(f"Storing {df.shape[0]} documents")
     if not os.getenv("OPENAI_API_KEY"):
         print("Retrieving OPENAI API key")
@@ -236,6 +241,7 @@ async def get_pq_ids():
         create_directory_if_necessary(store_dir)
 
         try:
+            pq_ids = []
             print(f"Downloading Ids file {pq_ids_file}")
             s3_client.download_file(pq_ids_file, pq_ids_file)
 
@@ -303,13 +309,14 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
     questions = get_specific_question_details(pq_ids)
     print(f"Extracted {len(questions)} PQs")
     # use Pandas for text manipulation
-    try:
-        df = pd.DataFrame(questions)
-        df = populate_embeddable_questions(df)
-        df = populate_embeddable_answers(df)
-    except Exception as e:
-        print(f"Failed to set Dataframe {e}")
-        return None
+    if questions:
+        try:
+            df = pd.DataFrame(questions)
+            df = populate_embeddable_questions(df)
+            df = populate_embeddable_answers(df)
+        except Exception as e:
+            print(f"Failed to set Dataframe {e}")
+            return None
 
     try:
         question_documents, answer_documents = create_documents(df)

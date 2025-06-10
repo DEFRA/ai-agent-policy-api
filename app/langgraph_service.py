@@ -16,6 +16,7 @@ Workflow: Search → Filter → Key Elements → Response → Review → [Loop i
 """
 
 import json
+import os
 import sys
 from typing import Annotated, Any, Optional
 
@@ -48,7 +49,8 @@ DISPLAY_SEARCH_RESULTS = False
 DISPLAY_JSON_OUTPUT = False
 
 # LLM Configuration
-llm = ChatOpenAI(model="o4-mini")
+api_key = os.getenv("OPENAI_API_KEY")
+llm = ChatOpenAI(model="o4-mini", openai_api_key=api_key)
 
 
 # Global LangGraph workflow variable

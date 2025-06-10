@@ -24,7 +24,7 @@ class SemanticChatRequest(BaseModel):
 
 # remove this example route
 @router.get("/test")
-async def root():
+async def test():
     logger.info("TEST ENDPOINT")
     return {"ok": True}
 

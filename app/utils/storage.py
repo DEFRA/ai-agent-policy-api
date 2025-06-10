@@ -54,7 +54,7 @@ def populate_embeddable_answers(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def create_documents(df: pd.DataFrame) -> tuple(list[Document],list[Document]):
+def create_documents(df: pd.DataFrame) -> tuple(list[Document]):
     print(f"Storing {df.shape[0]} documents")
     if not os.getenv("OPENAI_API_KEY"):
         print("Retrieving OPENAI API key")

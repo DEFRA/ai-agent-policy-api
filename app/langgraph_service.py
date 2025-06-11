@@ -16,7 +16,6 @@ Workflow: Search → Filter → Key Elements → Response → Review → [Loop i
 """
 
 import json
-import os
 import sys
 from typing import Annotated, Any, Optional
 
@@ -48,10 +47,11 @@ from agents import (
 DISPLAY_SEARCH_RESULTS = False
 DISPLAY_JSON_OUTPUT = False
 
+"""
 # LLM Configuration
 api_key = os.getenv("OPENAI_API_KEY")
 llm = ChatOpenAI(model="o4-mini", openai_api_key=api_key)
-
+"""
 
 # Global LangGraph workflow variable
 semantic_chat_graph = None
@@ -142,7 +142,8 @@ def setup_agent_dependencies():
     if "simple_langgraph_semantic_bot" not in sys.modules:
         import types
         bot_module = types.ModuleType("simple_langgraph_semantic_bot")
-        bot_module.llm = llm
+#        bot_module.llm = llm
+        bot_module.llm = ChatOpenAI(model="o4-mini")
         bot_module.DISPLAY_SEARCH_RESULTS = DISPLAY_SEARCH_RESULTS
         bot_module.DISPLAY_JSON_OUTPUT = DISPLAY_JSON_OUTPUT
         # We'll set search_tool when we create the internal service

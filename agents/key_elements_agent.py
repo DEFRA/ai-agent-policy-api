@@ -25,8 +25,11 @@ def key_elements_node(state: dict[str, Any]) -> dict[str, Any]:
     and response composition.
     """
     # Import dependencies at runtime to avoid circular imports
-    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, llm
+#from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, llm
+    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, get_llm
     from utils import extract_search_content
+
+    llm = get_llm()
 
     # Access filtered search results from state
     filtered_results = state.get("filtered_results", [])

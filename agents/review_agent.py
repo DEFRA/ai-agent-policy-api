@@ -29,8 +29,10 @@ def review_node(state: dict[str, Any]):
     6. Readability and quality
     """
     # Import dependencies at runtime to avoid circular imports
-    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, llm
+#    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, llm
+    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, get_llm
     from utils import extract_search_content
+    llm = get_llm()
 
     # Get the latest AI response to review
     ai_response = ""

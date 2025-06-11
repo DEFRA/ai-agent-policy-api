@@ -35,6 +35,7 @@ def review_node(state: dict[str, Any]):
     from utils import extract_search_content
     llm = ChatOpenAI(model="o4-mini")
 
+
     # Get the latest AI response to review
     ai_response = ""
     for msg in reversed(state["messages"]):

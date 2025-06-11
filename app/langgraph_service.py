@@ -23,8 +23,6 @@ from typing import Annotated, Any, Optional
 from langchain_core.messages import HumanMessage
 
 # LLM import
-from langchain_openai import ChatOpenAI
-
 # LangGraph imports
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages

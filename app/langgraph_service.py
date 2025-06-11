@@ -143,7 +143,6 @@ def setup_agent_dependencies():
         import types
         bot_module = types.ModuleType("simple_langgraph_semantic_bot")
 #        bot_module.llm = llm
-        bot_module.llm = ChatOpenAI(model="o4-mini")
         bot_module.DISPLAY_SEARCH_RESULTS = DISPLAY_SEARCH_RESULTS
         bot_module.DISPLAY_JSON_OUTPUT = DISPLAY_JSON_OUTPUT
         # We'll set search_tool when we create the internal service

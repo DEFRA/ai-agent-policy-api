@@ -28,7 +28,7 @@ def response_node(state: dict[str, Any]):
     from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, get_llm
 
     llm = get_llm()
-    
+
     # Access key elements from state (populated by key_elements_node)
     key_elements = state.get("key_elements", {})
     extracted_elements = key_elements.get("elements", "")

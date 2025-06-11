@@ -29,7 +29,7 @@ def filter_node(state: dict[str, Any]):
     from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, get_llm
 
     llm = get_llm()
-    
+
     # Access search results from state (populated by search_node)
     search_results = state.get("search_results", [])
 

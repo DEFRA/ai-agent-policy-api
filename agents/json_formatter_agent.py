@@ -20,8 +20,8 @@ def json_formatter_node(state: dict[str, Any]):
     """
     # Import dependencies at runtime to avoid circular imports
 #    from simple_langgraph_semantic_bot import llm
-    from simple_langgraph_semantic_bot import get_llm
-    llm = get_llm()
+
+    llm = ChatOpenAI(model="o4-mini")
 
     # Extract data from state - use filtered_results instead of search_results
     filtered_results = state.get("filtered_results", [])

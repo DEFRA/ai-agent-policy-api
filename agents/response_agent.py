@@ -25,9 +25,9 @@ def response_node(state: dict[str, Any]):
     """
     # Import dependencies at runtime to avoid circular imports
 #    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, llm
-    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, get_llm
+    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS
 
-    llm = get_llm()
+    llm = ChatOpenAI(model="o4-mini")
 
     # Access key elements from state (populated by key_elements_node)
     key_elements = state.get("key_elements", {})

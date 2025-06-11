@@ -70,7 +70,8 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Document]):
                 Document(
                 id=question["id"],
                 page_content=question["embeddable_question"],
-                metadata={"asking_member_id": question["askingMemberId"],
+                metadata={"answer": question["answerText"],
+                          "asking_member_id": question["askingMemberId"],
                           "date_tabled": question["dateTabled"],
                           "date_for_answer": question["dateForAnswer"],
                           "uin": question["uin"],
@@ -335,7 +336,12 @@ def get_question_match(question, limit):
                             k=limit
                         )
 
-    return [{"id":doc.id, "question":doc.page_content, "uin":doc.metadata["uin"], "score":float(score)} for doc,score in documents]
+    return [{"id":doc.id,
+              "question":doc.page_content,
+              "answer":doc.metadata["answer"],
+              "date_tabled":doc.metadata["date_tabled"],
+              "uin":doc.metadata["uin"],
+              "score":float(score)} for doc,score in documents]
 
 
 def get_answer_match(question, limit):

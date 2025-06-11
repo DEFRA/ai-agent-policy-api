@@ -1,37 +1,46 @@
+import json
 import re
 from logging import getLogger
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 
 from app.common.http_client import async_client
 from app.common.mongo import get_db
+
+# LangGraph imports
+from app.langgraph_service import get_semantic_graph, run_semantic_chat
 from app.utils.storage import add_documents, get_answer_match, get_question_match
 
 router = APIRouter(prefix="/policy")
 logger = getLogger(__name__)
 
-"""
-@router.on_event("startup")
-async def startup_event():
-    print("STARTUP")
-    global question_store
-    global answer_store
+# Pydantic models for request/response
 
-    try:
-        question_store, answer_store = store_documents()
-        print("STARTUP: following store creation")
+class SemanticChatRequest(BaseModel):
+    question: str
 
-    except Exception as e:
-        print(f"Error during startup: {e}")
-
-"""
 
 # remove this example route
 @router.get("/test")
-async def root():
+async def test():
     logger.info("TEST ENDPOINT")
     return {"ok": True}
+
+@router.get("/")
+async def root():
+    """Root endpoint returning API information"""
+    return {
+        "message": "Semantic Search API",
+        "version": "1.0.0",
+        "endpoints": [
+            "/search/questions",
+            "/search/answers",
+            "/chat/semantic",
+            "/health"
+        ]
+    }
 
 
 @router.get("/pq")
@@ -118,6 +127,68 @@ async def search_answers(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error performing search: {str(e)}") from e
+
+
+@router.post("/chat/semantic")
+async def semantic_chat(request: SemanticChatRequest):
+    """
+    LangGraph-powered semantic chat endpoint.
+
+    Performs semantic search, generates AI response, and returns structured JSON output.
+    Workflow: Search → LLM Summarization → JSON Formatting
+
+    Returns:
+        JSON object ready for frontend consumption
+    """
+ #   if df.empty:
+ #       raise HTTPException(status_code=500, detail="Data not loaded properly")
+
+    semantic_chat_graph = get_semantic_graph()
+
+    if semantic_chat_graph is None:
+        raise HTTPException(
+            status_code=500, detail="LangGraph workflow not initialized")
+
+    try:
+        # Execute LangGraph workflow
+        result = run_semantic_chat(semantic_chat_graph, request.question)
+
+        # Get the JSON output from the LLM
+        json_output_string = result.get("json_output", "")
+
+        if not json_output_string:
+            raise HTTPException(
+                status_code=500, detail="No JSON output generated")
+
+        # Parse the JSON string into an actual JSON object
+        try:
+            # Clean the JSON string if it has markdown formatting
+            cleaned_json = json_output_string.strip()
+            if cleaned_json.startswith("```json"):
+                cleaned_json = cleaned_json[7:]  # Remove ```json
+            if cleaned_json.endswith("```"):
+                cleaned_json = cleaned_json[:-3]  # Remove ```
+            cleaned_json = cleaned_json.strip()
+
+            # Parse into actual JSON object and return
+
+            return json.loads(cleaned_json)
+
+        except json.JSONDecodeError as e:
+            # If JSON parsing fails, return a structured fallback
+            return {
+                "query": request.question,
+                "answer": result.get("response", "Error generating response"),
+                "search_results": result.get("search_results", []),
+                "error": f"JSON parsing failed: {str(e)}",
+                "raw_output": json_output_string
+            }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in semantic chat workflow: {str(e)}"
+        ) from e
 
 
 @router.get("/update")

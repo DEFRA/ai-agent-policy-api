@@ -9,25 +9,25 @@ from app.common.mongo import get_mongo_client
 from app.common.tracing import TraceIdMiddleware
 from app.config import config
 from app.health.router import router as health_router
+from app.langgraph_service import build_semantic_chat_graph
 from app.policy.router import router as policy_router
-
-#from app.utils.storage import check_storage
+from app.utils.storage import check_storage
 
 logger = getLogger(__name__)
-
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # Startup
     print(f"S3_BUCKET: {config.S3_BUCKET}")
-    """
-    s3_client = S3Client()
-    s3_ok = s3_client.check_connection()
-    """
+
     client = await get_mongo_client()
     logger.info("MongoDB client connected")
 
-#    question_store, answer_store = await check_storage()
+    question_store, answer_store = await check_storage()
+    # Initialize LangGraph workflow
+    semantic_chat_graph = build_semantic_chat_graph(question_store)
+    print(f"Chat graph {semantic_chat_graph}")
+    print("✅ LangGraph semantic chat workflow initialized")
 
     print("Yielding")
     yield

@@ -8,6 +8,7 @@ responses against Parliamentary Question standards and the conditional routing l
 from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_openai import ChatOpenAI
 
 
 def review_node(state: dict[str, Any]):

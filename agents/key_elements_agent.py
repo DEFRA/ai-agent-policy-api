@@ -8,6 +8,7 @@ and structures important information from filtered search results.
 from typing import Any
 
 from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
 
 
 def key_elements_node(state: dict[str, Any]) -> dict[str, Any]:

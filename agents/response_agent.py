@@ -8,6 +8,7 @@ LLM-based responses using pre-extracted key elements.
 from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_openai import ChatOpenAI
 
 
 def response_node(state: dict[str, Any]):

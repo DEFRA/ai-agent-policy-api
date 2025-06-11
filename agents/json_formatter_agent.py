@@ -8,6 +8,7 @@ structured JSON output for API consumption.
 from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_openai import ChatOpenAI
 
 
 def json_formatter_node(state: dict[str, Any]):

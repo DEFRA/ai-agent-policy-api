@@ -8,6 +8,7 @@ to assess the relevance of search results beyond semantic similarity.
 from typing import Any
 
 from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
 
 
 def filter_node(state: dict[str, Any]):
@@ -26,9 +27,9 @@ def filter_node(state: dict[str, Any]):
     """
     # Import dependencies at runtime to avoid circular imports
 #from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, llm
-    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS, get_llm
+    from simple_langgraph_semantic_bot import DISPLAY_SEARCH_RESULTS
 
-    llm = get_llm()
+    llm = ChatOpenAI(model="o4-mini")
 
     # Access search results from state (populated by search_node)
     search_results = state.get("search_results", [])

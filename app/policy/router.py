@@ -3,7 +3,7 @@ import re
 from logging import getLogger
 
 import requests
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from app.common.http_client import async_client
@@ -193,17 +193,21 @@ async def semantic_chat(request: SemanticChatRequest):
 
 @router.get("/update")
 async def add_questions(
+    background_tasks: BackgroundTasks,
     count: int = Query(..., description="The number of documents to add"),
     offset: int = Query(..., description="The number of ids to skip before retrieval")
     ):
     """Add a number of documents to the store using the saved ids"""
 
+    """
     try:
         await add_documents(count, offset)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error adding {count} documents with offset {offset}: {str(e)}") from e
-
+    """
+    background_tasks.add_task(add_documents, count, offset)
+    return {"message":f"adding documents with offset {offset} and count {count}" }
 
 @router.get("/db")
 async def db_query(db=Depends(get_db)):

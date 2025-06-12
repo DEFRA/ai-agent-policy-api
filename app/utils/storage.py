@@ -2,6 +2,7 @@ import csv
 import os
 from logging import getLogger
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from fastapi import APIRouter
@@ -54,7 +55,7 @@ def populate_embeddable_answers(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def create_documents(df: pd.DataFrame) -> tuple(list[Document]|list[int]):
+def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
 
     if not os.getenv("OPENAI_API_KEY"):
         print("Retrieving OPENAI API key")

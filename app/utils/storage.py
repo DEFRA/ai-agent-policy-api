@@ -2,6 +2,7 @@ import csv
 import os
 from logging import getLogger
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from fastapi import APIRouter
@@ -54,14 +55,17 @@ def populate_embeddable_answers(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def create_documents(df: pd.DataFrame) -> tuple(list[Document]):
-    print(f"Storing {df.shape[0]} documents")
+def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
+
     if not os.getenv("OPENAI_API_KEY"):
         print("Retrieving OPENAI API key")
         os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 
     question_documents = []
     answer_documents = []
+
+    success_ids = []
+    failed_ids = []
 
     for _index, question in df.iterrows():
 #        print(f"Creating embedding for {question['id']}")
@@ -88,10 +92,13 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Document]):
                 page_content=question["answerText"],
                 )
             )
+            success_ids.append(id)
+
         except Exception as e:
             print(f"Error embedding question {question}: {e}")
+            failed_ids.append(id)
 
-    return question_documents, answer_documents
+    return question_documents, answer_documents, success_ids, failed_ids
 
 
 def create_vector_store(s3_client, documents, embed_model, store_dir):
@@ -111,19 +118,21 @@ def create_vector_store(s3_client, documents, embed_model, store_dir):
 
 
 def update_vector_store(s3_client, documents, embed_model, store_dir):
-    print(f"Locating store here {store_dir}")
+    vector_store = None
+    try:
+        vector_store = load_store(s3_client, store_dir, embed_model)
 
-    vector_store = load_store(s3_client, store_dir, embed_model)
+        vector_store.add_documents(documents=documents)
+        # Save vector store
+        vector_store.save_local(store_dir)
 
-    vector_store.add_documents(documents=documents)
-    # Save vector store
-    vector_store.save_local(store_dir)
+        num_documents = len(vector_store.index_to_docstore_id)
+        print(f"Total number of documents: {num_documents}")
 
-    num_documents = len(vector_store.index_to_docstore_id)
-    print(f"Total number of documents: {num_documents}")
-
-    s3_client.upload_file(store_dir + "index.faiss")
-    s3_client.upload_file(store_dir + "index.pkl")
+        s3_client.upload_file(store_dir + "index.faiss")
+        s3_client.upload_file(store_dir + "index.pkl")
+    except Exception as e:
+        print(f"Failed to update vector store at {store_dir}: {e}")
 
     return vector_store
 
@@ -185,21 +194,21 @@ async def add_documents(count: int, offset: int):
     # batches of 1 to avoid silly exclusions
     for i in range(offset, count + offset):
         print(f"Retrieving index {i}")
-        questions = get_specific_question_details([pq_ids[i]])
+        questions, not_retrieved_ids = get_specific_question_details([pq_ids[i]])
         try:
             df = pd.DataFrame(questions)
             df = populate_embeddable_questions(df)
             df = populate_embeddable_answers(df)
         except Exception as e:
-            print(f"Failed to set Dataframe {e}")
+            print(f"Failed to set Dataframe for questions {questions} : {e}")
             return
 
         try:
-            question_documents, answer_documents = create_documents(df)
+            question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
             question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
             answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
         except Exception as e:
-            print(f"Failed to update stores with {questions[0]} : {e}")
+            print(f"Failed to update stores with {questions} : {e}")
 
 async def get_pq_ids():
     global pq_ids
@@ -307,8 +316,8 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
     if len(pq_ids) > 0:
         print(f"First PQ id {pq_ids[0]}")
 
-    questions = get_specific_question_details(pq_ids)
-    print(f"Extracted {len(questions)} PQs")
+    questions, not_retrieved_ids = get_specific_question_details(pq_ids)
+
     # use Pandas for text manipulation
     if questions:
         try:
@@ -316,11 +325,14 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
             df = populate_embeddable_questions(df)
             df = populate_embeddable_answers(df)
         except Exception as e:
-            print(f"Failed to set Dataframe {e}")
+            print(f"Failed to set Dataframe for questions {questions}:\n{e}")
             return None
 
     try:
-        question_documents, answer_documents = create_documents(df)
+        question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
+        if failed_ids:
+            print(f"The following policy ids were not stored:\n{failed_ids}")
+
         question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
         answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:

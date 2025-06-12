@@ -202,14 +202,11 @@ def get_specific_question_details(pq_ids):
     # Initialize list to store all question details
     all_questions = []
 
-    error_count = 0
+    failed_ids = []
 
     # Process each ID
     for i, question_id in enumerate(pq_ids, 1):
         print(f"Retrieving PQ id {question_id}")
-        if error_count > 100:
-            print(f"Exceeded error threshold {error_count}")
-            break
         # Only print progress every 250 questions
         if i % 250 == 0 or i == 1:
             print(
@@ -226,9 +223,9 @@ def get_specific_question_details(pq_ids):
                 print(
                     f"Warning: No 'value' field found for question {question_id}")
         else:
-            error_count += 1
+            failed_ids.append(question_id)
 
         # Add a small delay to avoid overwhelming the API
         time.sleep(0.2)  # 200ms delay between requests
 
-    return all_questions
+    return all_questions, failed_ids

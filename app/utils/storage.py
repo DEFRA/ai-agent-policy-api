@@ -350,9 +350,9 @@ def get_question_match(question, limit):
 
     return [{"id":doc.id,
               "question":doc.page_content,
-              "answer":doc.metadata["answer"],
-              "date_tabled":doc.metadata["date_tabled"],
-              "uin":doc.metadata["uin"],
+              "answer":doc.metadata.get("answer",""),
+              "date_tabled":doc.metadata.egt("date_tabled",""),
+              "uin":doc.metadata.get("uin",""),
               "score":float(score)} for doc,score in documents]
 
 

@@ -51,4 +51,4 @@ COPY . .
 EXPOSE 8085
 
 # Run the application.
-CMD ["uvicorn", "app.main:app", "--host=0.0.0.0", "--log-config", "logging.json", "--timeout-keep-alive=100"]
+CMD ["uvicorn", "app.main:app", "--host=0.0.0.0", "--log-config", "logging.json", "--timeout-keep-alive=10000"]

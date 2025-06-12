@@ -193,6 +193,7 @@ class InternalSemanticSearchService:
         """Perform semantic search using internal Vector Store operations."""
         try:
             similarity_results = self.question_store.get_question_match(question, self.num_results)
+            print(f"Initial results {similarity_results}")
  #           similarity_results = cosine_similarity_search(
  #               question, self.df, 'question_embedding'
  #           )
@@ -212,7 +213,8 @@ class InternalSemanticSearchService:
                 results.append(result)
 
             return results
-        except Exception:
+        except Exception as e:
+            print(f"Problem searching so returning empty list:\n {e}")
             return []
 
 # =============================================================================

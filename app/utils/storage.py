@@ -176,7 +176,8 @@ def create_directory_if_necessary(directory_name):
         print(f"Error creating {path} directory: {e}")
 
 
-async def add_documents(count: int, offset: int):
+#async def add_documents(count: int, offset: int):
+def add_documents(count: int, offset: int):
     """Add the specified number of documents to the stores."""
 
     global question_store, answer_store

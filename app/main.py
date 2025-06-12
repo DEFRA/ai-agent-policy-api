@@ -25,7 +25,7 @@ async def lifespan(_: FastAPI):
 
     question_store, answer_store = await check_storage()
     # Initialize LangGraph workflow
-    semantic_chat_graph = build_semantic_chat_graph(question_store)
+    semantic_chat_graph = build_semantic_chat_graph()
     print(f"Chat graph {semantic_chat_graph}")
     print("✅ LangGraph semantic chat workflow initialized")
 

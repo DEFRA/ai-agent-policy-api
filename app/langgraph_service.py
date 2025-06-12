@@ -36,6 +36,7 @@ from agents import (
     review_decision,
     review_node,
 )
+from app.utils.storage import get_question_match
 
 # =============================================================================
 # CONFIGURATION - API Optimized
@@ -184,15 +185,14 @@ class ApiSemanticState(TypedDict):
 class InternalSemanticSearchService:
     """Internal search service using direct Vector Store operations."""
 
-    def __init__(self, question_store, num_results: int = 10, split_string: str = "Affairs,"):
-        self.question_store = question_store
+    def __init__(self, num_results: int = 10, split_string: str = "Affairs,"):
         self.num_results = num_results
         self.split_string = split_string
 
     def search(self, question: str) -> list[dict[str, Any]]:
         """Perform semantic search using internal Vector Store operations."""
         try:
-            similarity_results = self.question_store.get_question_match(question, self.num_results)
+            similarity_results = get_question_match(question, self.num_results)
             print(f"Initial results {similarity_results}")
  #           similarity_results = cosine_similarity_search(
  #               question, self.df, 'question_embedding'
@@ -393,11 +393,11 @@ history_json_formatter = create_history_aware_json_formatter()
 # =============================================================================
 
 
-def build_semantic_chat_graph(question_store):
+def build_semantic_chat_graph():
     """Build complete LangGraph workflow matching main pipeline."""
     global semantic_chat_graph
     # Initialize internal search service
-    search_service = InternalSemanticSearchService(question_store)
+    search_service = InternalSemanticSearchService()
 
     # Make search service available to mock module (for compatibility)
     sys.modules["simple_langgraph_semantic_bot"].search_tool = search_service

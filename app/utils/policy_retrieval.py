@@ -224,6 +224,7 @@ def get_specific_question_details(pq_ids):
                     f"Warning: No 'value' field found for question {question_id}")
         else:
             failed_ids.append(question_id)
+            print(f"Failed ids so far {failed_ids}")
 
         # Add a small delay to avoid overwhelming the API
         time.sleep(0.2)  # 200ms delay between requests

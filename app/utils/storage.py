@@ -195,20 +195,21 @@ async def add_documents(count: int, offset: int):
     for i in range(offset, count + offset):
         print(f"Retrieving index {i}")
         questions, not_retrieved_ids = get_specific_question_details([pq_ids[i]])
-        try:
-            df = pd.DataFrame(questions)
-            df = populate_embeddable_questions(df)
-            df = populate_embeddable_answers(df)
-        except Exception as e:
-            print(f"Failed to set Dataframe for questions {questions} : {e}")
-            return
+        if questions:
+            try:
+                df = pd.DataFrame(questions)
+                df = populate_embeddable_questions(df)
+                df = populate_embeddable_answers(df)
+            except Exception as e:
+                print(f"Failed to set Dataframe for questions {questions} : {e}")
 
-        try:
-            question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
-            question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-            answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
-        except Exception as e:
-            print(f"Failed to update stores with {questions} : {e}")
+
+            try:
+                question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
+                question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+                answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+            except Exception as e:
+                print(f"Failed to update stores with {questions} : {e}")
 
 async def get_pq_ids():
     global pq_ids

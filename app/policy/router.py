@@ -1,5 +1,6 @@
 import json
 import re
+import time
 from logging import getLogger
 
 import requests
@@ -147,17 +148,21 @@ async def semantic_chat_background(request: SemanticChatRequest,
     Returns:
         JSON object ready for frontend consumption
     """
+
+    tag = time.strftime("%H%M%S", time.localtime())
+
+    background_tasks.add_task(semantic_pipeline, request, tag)
+    return {"message":f"Semantic pipeline is running. Use the tag {tag} to retrieve the output." }
+
+def semantic_pipeline(request, tag):
+
     semantic_chat_graph = get_semantic_graph()
 
     if semantic_chat_graph is None:
         raise HTTPException(
-            status_code=500, detail="LangGraph workflow not initialized")
-
-    background_tasks.add_task(semantic_pipeline, request, semantic_chat_graph)
-    return {"message":"Semantic pipeline is running" }
-
-def semantic_pipeline(request, semantic_chat_graph):
+                status_code=500, detail="LangGraph workflow not initialized")
     try:
+
         # Execute LangGraph workflow
         result = run_semantic_chat(semantic_chat_graph, request.question)
 
@@ -195,15 +200,15 @@ def semantic_pipeline(request, semantic_chat_graph):
     except Exception:
         output = {"message":"Error in semantic chat workflow: {str(e)}"}
 
-    store_output("semantic_chat",output)
+    store_output("semantic_chat_" + tag + ".json",output)
 
 
 @router.get("/chat/semantic_output")
-async def semantic_chat_result():
+async def semantic_chat_result(tag: str = Query("", description="Semantic Query Tag")):
     """
     Returns the result of the last semantic chat pipeline run if available.
     """
-    return read_output("semantic_chat")
+    return read_output("semantic_chat_" + tag + ".json")
 
 
 

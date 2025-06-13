@@ -82,6 +82,7 @@ def display_search_results(results: list[dict[str, Any]], user_message: str):
     for i, result in enumerate(results, 1):
         if isinstance(result, dict):
             pq_id = result.get("id", f"ID-{i}")
+            uin =  result.get("uin", "")
             ask_date = result.get("ask_date", result.get("source", ""))
             question = result.get("question", "")
             answer = result.get("answer", "")
@@ -89,6 +90,8 @@ def display_search_results(results: list[dict[str, Any]], user_message: str):
 
             date_display = f" - {ask_date}" if ask_date else ""
             print(f"\nResult {i} (PQ {pq_id}{date_display}):")
+            if uin:
+                print(f"UIN: {uin}")
             if question:
                 print(f"Question: {question}")
             if answer:

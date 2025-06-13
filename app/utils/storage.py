@@ -372,7 +372,7 @@ def store_output(filename, json_content):
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     create_directory_if_necessary(store_dir)
 
-    target =  store_dir + filename + ".json"
+    target =  store_dir + filename
 
     with open(target, "w") as f:
         json.dump(json_content, f)
@@ -385,7 +385,7 @@ def read_output(filename):
     # hack to overcome ruff insistence on avoiding /tmp
     store_dir = "/" + TMP + QUESTION_STORE_DIR
 
-    target =  store_dir + filename + ".json"
+    target =  store_dir + filename
 
     exists = s3_client.check_object_existence(target)
 

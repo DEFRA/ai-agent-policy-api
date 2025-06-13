@@ -19,8 +19,8 @@ from .policy_retrieval import get_all_question_ids, get_specific_question_detail
 
 #from .policy_retrieval import get_specific_question_details
 
-QUESTION_STORE_DIR="/question_store_3/"
-ANSWER_STORE_DIR="/answer_store_3/"
+QUESTION_STORE_DIR="/question_store_4/"
+ANSWER_STORE_DIR="/answer_store_4/"
 
 TMP = "tmp"
 
@@ -120,6 +120,16 @@ def create_vector_store(s3_client, documents, embed_model, store_dir):
 
 def update_vector_store(s3_client, documents, embed_model, store_dir):
     vector_store = None
+    exists = s3_client.check_object_existence(store_dir + "index.faiss")
+
+    if not exists:
+        print(f"Creating new FAISS store at {store_dir}")
+
+        vector_store = create_vector_store(s3_client, documents, embed_model, store_dir)
+        print(f"Created {vector_store}")
+
+        return vector_store
+
     try:
         vector_store = load_store(s3_client, store_dir, embed_model)
 

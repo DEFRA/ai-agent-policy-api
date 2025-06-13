@@ -177,6 +177,42 @@ def create_directory_if_necessary(directory_name):
         print(f"Error creating {path} directory: {e}")
 
 
+async def add_pqs_file(filename: str):
+    global question_store, answer_store
+
+    temp_dir = "/" + TMP + "/"
+    create_directory_if_necessary(temp_dir)
+    target = temp_dir + filename
+    s3_client = S3Client()
+    exists = s3_client.check_object_existence(target)
+
+    if not exists:
+       return {"message":f"Source file {target} does not exist."}
+
+    s3_client.download_file(target, target)
+    print(f"Downloaded {target}")
+
+    df = pd.read_csv(target)
+    df = populate_embeddable_questions(df)
+    df = populate_embeddable_answers(df)
+
+    question_dir = "/" + TMP + QUESTION_STORE_DIR
+    answer_dir = "/" + TMP + ANSWER_STORE_DIR
+
+    embed_model = OpenAIEmbeddings(
+                       model="text-embedding-3-small",
+                    )
+
+    try:
+        question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
+        question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+        answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+    except Exception as e:
+        print(f"Failed to update stores with data from {target} : {e}")
+
+    print(f"File {filename} loaded into vector stores")
+    return None
+
 async def add_documents(count: int, offset: int):
     """Add the specified number of documents to the stores."""
 

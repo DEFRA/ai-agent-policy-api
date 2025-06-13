@@ -14,6 +14,7 @@ from app.common.mongo import get_db
 from app.langgraph_service import get_semantic_graph, run_semantic_chat
 from app.utils.storage import (
     add_documents,
+    add_pqs_file,
     get_answer_match,
     get_question_match,
     read_output,
@@ -291,6 +292,17 @@ async def add_questions(
     """
     background_tasks.add_task(add_documents, count, offset)
     return {"message":f"adding documents with offset {offset} and count {count}" }
+
+
+@router.get("/upload")
+async def upload_questions(
+    background_tasks: BackgroundTasks,
+    pq_file: str = Query(..., description="The name of the file in S3 containing the PQs to insert into the stores")
+    ):
+    """Add a number of documents to the store using the saved ids"""
+
+    background_tasks.add_task(add_pqs_file, pq_file)
+    return {"message":f"Uploading PQs from {pq_file}" }
 
 @router.get("/db")
 async def db_query(db=Depends(get_db)):

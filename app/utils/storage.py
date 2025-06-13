@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 from logging import getLogger
 from pathlib import Path
@@ -363,3 +364,41 @@ def get_answer_match(question, limit):
                             k=limit
                         )
     return [{"id":doc.id, "answer":doc.page_content, "score":float(score)} for doc,score in documents]
+
+def store_output(filename, json_content):
+    s3_client = S3Client()
+    # hack to overcome ruff insistence on avoiding /tmp
+
+    store_dir = "/" + TMP + QUESTION_STORE_DIR
+    create_directory_if_necessary(store_dir)
+
+    target =  store_dir + filename + ".json"
+
+    with open(target, "w") as f:
+        json.dump(json_content, f)
+
+    s3_client.upload_file(target)
+
+
+def read_output(filename):
+    s3_client = S3Client()
+    # hack to overcome ruff insistence on avoiding /tmp
+    store_dir = "/" + TMP + QUESTION_STORE_DIR
+
+    target =  store_dir + filename + ".json"
+
+    exists = s3_client.check_object_existence(target)
+
+    if not exists:
+       return {"message":"Semantic Chat output not yet available, please try again soon."}
+
+    create_directory_if_necessary(store_dir)
+
+    s3_client.download_file(target, target)
+
+    with open(target) as file:
+        result = json.load(file)
+
+    print(f"Successfully read {result}")
+    return result
+

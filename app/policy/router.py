@@ -11,7 +11,13 @@ from app.common.mongo import get_db
 
 # LangGraph imports
 from app.langgraph_service import get_semantic_graph, run_semantic_chat
-from app.utils.storage import add_documents, get_answer_match, get_question_match
+from app.utils.storage import (
+    add_documents,
+    get_answer_match,
+    get_question_match,
+    read_output,
+    store_output,
+)
 
 router = APIRouter(prefix="/policy")
 logger = getLogger(__name__)
@@ -127,6 +133,78 @@ async def search_answers(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error performing search: {str(e)}") from e
+
+
+@router.post("/chat/background_semantic")
+async def semantic_chat_background(request: SemanticChatRequest,
+                                   background_tasks: BackgroundTasks):
+    """
+    LangGraph-powered semantic chat endpoint.
+
+    Performs semantic search, generates AI response, and returns structured JSON output.
+    Workflow: Search → LLM Summarization → JSON Formatting
+
+    Returns:
+        JSON object ready for frontend consumption
+    """
+    semantic_chat_graph = get_semantic_graph()
+
+    if semantic_chat_graph is None:
+        raise HTTPException(
+            status_code=500, detail="LangGraph workflow not initialized")
+
+    background_tasks.add_task(semantic_pipeline, request, semantic_chat_graph)
+    return {"message":"Semantic pipeline is running" }
+
+def semantic_pipeline(request, semantic_chat_graph):
+    try:
+        # Execute LangGraph workflow
+        result = run_semantic_chat(semantic_chat_graph, request.question)
+
+        # Get the JSON output from the LLM
+        json_output_string = result.get("json_output", "")
+
+        if json_output_string:
+            # Parse the JSON string into an actual JSON object
+            try:
+                # Clean the JSON string if it has markdown formatting
+                cleaned_json = json_output_string.strip()
+                if cleaned_json.startswith("```json"):
+                    cleaned_json = cleaned_json[7:]  # Remove ```json
+                if cleaned_json.endswith("```"):
+                    cleaned_json = cleaned_json[:-3]  # Remove ```
+                cleaned_json = cleaned_json.strip()
+
+                # Parse into actual JSON object and return
+
+                output = json.loads(cleaned_json)
+
+            except json.JSONDecodeError as e:
+                # If JSON parsing fails, return a structured fallback
+                output = {
+                    "query": request.question,
+                    "answer": result.get("response", "Error generating response"),
+                    "search_results": result.get("search_results", []),
+                    "error": f"JSON parsing failed: {str(e)}",
+                    "raw_output": json_output_string
+            }
+
+        else:
+            output = {"message":"No JSON output generated"}
+
+    except Exception:
+        output = {"message":"Error in semantic chat workflow: {str(e)}"}
+
+    store_output("semantic_chat",output)
+
+
+@router.get("/chat/semantic_output")
+async def semantic_chat_result():
+    """
+    Returns the result of the last semantic chat pipeline run if available.
+    """
+    return read_output("semantic_chat")
+
 
 
 @router.post("/chat/semantic")

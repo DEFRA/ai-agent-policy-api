@@ -11,6 +11,7 @@ from app.config import config
 from app.health.router import router as health_router
 from app.langgraph_service import build_semantic_chat_graph
 from app.policy.router import router as policy_router
+from app.utils.storage import check_storage
 
 logger = getLogger(__name__)
 
@@ -22,13 +23,15 @@ async def lifespan(_: FastAPI):
     client = await get_mongo_client()
     logger.info("MongoDB client connected")
 
-#   question_store, answer_store = await check_storage()
-    # Initialize LangGraph workflow
-    semantic_chat_graph = build_semantic_chat_graph()
-    print(f"Chat graph {semantic_chat_graph}")
-    print("✅ LangGraph semantic chat workflow initialized")
+    question_store, answer_store = await check_storage()
+    if question_store is not None:
+        # Initialize LangGraph workflow
+        semantic_chat_graph = build_semantic_chat_graph()
+        print(f"Chat graph {semantic_chat_graph}")
+        print("✅ LangGraph semantic chat workflow initialized")
+    else:
+        print("No available Vector Stores")
 
-    print("Yielding")
     yield
     # Shutdown
     print("Exiting")

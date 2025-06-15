@@ -14,6 +14,7 @@ Convert the provided information into a well-structured JSON object that follows
     "results": [
       {
         "id": "<string|integer>",              // PQ ID from the original parliamentary question
+        "uin": "<string>",                     // PQ UIN
         "question": "<string>",                // source question text
         "answer": "<string>",                  // source answer text
         "score": <float>                       // similarity/relevance score

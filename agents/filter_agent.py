@@ -130,6 +130,7 @@ def assemble_result_decisions(lines):
 def create_search_context(result, i, search_context):
     pq_id = result.get("id", f"ID-{i}")
     ask_date = result.get("ask_date", result.get("source", ""))
+    uin = result.get("uin", "")
     question = result.get("question", "")
     answer = result.get("answer", "")
     score = result.get("score", result.get("similarity", ""))
@@ -140,6 +141,8 @@ def create_search_context(result, i, search_context):
     search_context += f"\nResult {i} (PQ {pq_id}{date_display}):\n"
     if question:
         search_context += f"Question: {question}\n"
+    if uin:
+        search_context += f"UIN: {uin}\n"
     if answer:
         search_context += f"Answer: {answer}\n"
     if score:

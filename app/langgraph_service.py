@@ -116,6 +116,7 @@ def extract_search_content(results: list[dict[str, Any]]) -> str:
         date_display = f" - {ask_date}" if ask_date else ""
 
         part = f"Result {i} (PQ {pq_id}{date_display}):"
+        part += f"\nUIN: {result.get('uin', '')}"
         part += f"\nQuestion: {result.get('question', '')}"
         part += f"\nAnswer: {result.get('answer', '')}"
         part += f"\n(Relevance Score: {result.get('score', result.get('similarity', ''))})"
@@ -206,6 +207,7 @@ class InternalSemanticSearchService:
             for row in similarity_results:
                 result = {
                     "id": str(row["id"]),
+                    "uin": row["uin"],
                     "question": row["question"],
                     "answer": row["answer"],
                     "score": row["score"],

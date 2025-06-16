@@ -3,7 +3,6 @@ import re
 import time
 from logging import getLogger
 
-import requests
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 
@@ -13,7 +12,6 @@ from app.common.mongo import get_db
 # LangGraph imports
 from app.langgraph_service import get_semantic_graph, run_semantic_chat
 from app.utils.storage import (
-    add_documents,
     add_pqs_file,
     get_answer_match,
     get_question_match,
@@ -30,12 +28,6 @@ class SemanticChatRequest(BaseModel):
     question: str
 
 
-# remove this example route
-@router.get("/test")
-async def test():
-    logger.info("TEST ENDPOINT")
-    return {"ok": True}
-
 @router.get("/")
 async def root():
     """Root endpoint returning API information"""
@@ -49,36 +41,6 @@ async def root():
             "/health"
         ]
     }
-
-
-@router.get("/pq")
-async def get_question(
-    question_id: int = Query(0, description="Index of PQ")
-):
-    """Get PQ from written answers api using provided question id"""
-
-    proxies = {
-    "http": "http://localhost:3128",
-    "https": "http://localhost:3128",
-    }
-
-
-    base_url = "https://questions-statements-api.parliament.uk/api"
-    endpoint = f"{base_url}/writtenquestions/questions/{question_id}"
-
-    try:
-        response = requests.get(
-            endpoint,
-            headers={"Accept": "application/json",
-                     "User-Agent": "Python/Requests"},
-            timeout=5,
-            proxies=proxies
-        )
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        print(f"Error fetching question {question_id}: {e}")
-        return {}
 
 
 @router.get("/search/questions")
@@ -273,25 +235,6 @@ async def semantic_chat(request: SemanticChatRequest):
             status_code=500,
             detail=f"Error in semantic chat workflow: {str(e)}"
         ) from e
-
-
-@router.get("/update")
-async def add_questions(
-    background_tasks: BackgroundTasks,
-    count: int = Query(..., description="The number of documents to add"),
-    offset: int = Query(..., description="The number of ids to skip before retrieval")
-    ):
-    """Add a number of documents to the store using the saved ids"""
-
-    """
-    try:
-        await add_documents(count, offset)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error adding {count} documents with offset {offset}: {str(e)}") from e
-    """
-    background_tasks.add_task(add_documents, count, offset)
-    return {"message":f"adding documents with offset {offset} and count {count}" }
 
 
 @router.get("/upload")

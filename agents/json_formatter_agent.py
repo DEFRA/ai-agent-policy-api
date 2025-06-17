@@ -108,7 +108,7 @@ def json_formatter_node(state: dict[str, Any]):
 
 
 def create_search_data(result, i, search_data):
-    pq_id = result.get("id", f"ID-{i}")
+#    pq_id = result.get("id", f"ID-{i}")
     ask_date = result.get("ask_date", result.get("source", ""))
     uin = result.get("uin", "")
     question = result.get("question", "")
@@ -119,7 +119,7 @@ def create_search_data(result, i, search_data):
     # Format date for display
     date_display = f" - {ask_date}" if ask_date else ""
 
-    search_data += f"\nResult {i} (PQ {pq_id}{date_display}):\n"
+    search_data += f"\nResult {i} (PQ {uin}{date_display}):\n"
     if question:
         search_data += f"  Question: {question}\n"
     if uin:

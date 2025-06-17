@@ -116,7 +116,7 @@ async def semantic_chat_background(request: SemanticChatRequest,
     tag = time.strftime("%H%M%S", time.localtime())
 
     background_tasks.add_task(semantic_pipeline, request, tag)
-    return {"message":f"Semantic pipeline is running. Use the tag {tag} to retrieve the output." }
+    return {"message":f"{tag}" }
 
 
 def semantic_pipeline(request: SemanticChatRequest, tag: str):

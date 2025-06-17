@@ -106,16 +106,60 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
 
     return question_documents, answer_documents, success_ids, failed_ids
 
+def remove_pq_vectors(store, documents: list[Document]):
+    del_ids = [d["id"] for d in documents]
+
+    try:
+        del_status = store.delete(del_ids)
+        print(f"Deletion {del_status=}")
+    except Exception as e:
+        print(f"Deletion of vectors failed: {e}")
+
 
 async def get_pq_status():
+
+    global question_store, answer_store
+
     status_ids = get_ids_from_file(STATUS_FILE)
 
     if len(status_ids) == 0:
         print("No statuses to check")
+        return
 
     questions, not_retrieved_ids = get_specific_question_details(status_ids)
+
+    # compile the list of ids for further checking, starting with the ones that failed to retrieve
+    to_check_ids = not_retrieved_ids
+    to_update = []
+
     for question in questions:
-        print(question["answerText"])
+        if question["answerText"]:
+            to_update.append(question)
+        else:
+            to_check_ids.append(question["id"])
+
+    s3_client = S3Client()
+    embed_model = OpenAIEmbeddings(
+                       model="text-embedding-3-small",
+                    )
+
+    # The necessary PQ transformations are simpler using pandas
+    df = pd.DataFrame(to_update)
+    df = populate_embeddable_questions(df)
+
+    # quick hack to overcome the ruff dislike of explicitly using /tmp
+
+    question_dir = "/" + TMP + QUESTION_STORE_DIR
+    answer_dir = "/" + TMP + ANSWER_STORE_DIR
+
+    try:
+        question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
+        question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+        answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+    except Exception as e:
+        print(f"Failed to update stores with answer data : {e}")
+
+    write_ids_file(STATUS_FILE)
 
 
 def get_ids_from_file(filename):
@@ -147,6 +191,25 @@ def get_ids_from_file(filename):
             print(f"Error downloading/reading {id_file} from S3: {e}")
 
     return status_ids
+
+
+def write_ids_file(filename):
+
+    try:
+        with open(filename, "w") as csvfile:
+            writer = csv.writer(csvfile)
+            for pid in pq_ids:
+                writer.writerow([pid])
+    except Exception as e:
+        print(f"Error storing ids in file {filename}: {e}")
+        return
+
+    s3_client = S3Client()
+
+    try:
+        s3_client.upload_file(filename)
+    except Exception as e:
+        print(f"Error storing  {filename} in S3: {e}")
 
 
 def create_vector_store(s3_client: S3Client,
@@ -199,6 +262,9 @@ def update_vector_store(s3_client: S3Client,
 
     try:
         vector_store = load_store(s3_client, store_dir, embed_model)
+
+        # remove any that have already been inserted, as upsert is not available
+        remove_pq_vectors(vector_store, documents)
 
         vector_store.add_documents(documents=documents)
         # Save vector store

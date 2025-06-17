@@ -128,7 +128,7 @@ def assemble_result_decisions(lines):
 
 
 def create_search_context(result, i, search_context):
-    pq_id = result.get("id", f"ID-{i}")
+#    pq_id = result.get("id", f"ID-{i}")
     ask_date = result.get("ask_date", result.get("source", ""))
     uin = result.get("uin", "")
     question = result.get("question", "")
@@ -138,7 +138,7 @@ def create_search_context(result, i, search_context):
     # Format date for display
     date_display = f" - {ask_date}" if ask_date else ""
 
-    search_context += f"\nResult {i} (PQ {pq_id}{date_display}):\n"
+    search_context += f"\nResult {i} (PQ {uin}{date_display}):\n"
     if question:
         search_context += f"Question: {question}\n"
     if uin:

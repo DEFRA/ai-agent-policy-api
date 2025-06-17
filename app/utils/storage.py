@@ -1,6 +1,5 @@
 import csv
 import json
-import os
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -13,11 +12,8 @@ from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
 from app.common.s3 import S3Client
-from app.config import config as settings
 
 from .policy_retrieval import get_all_question_ids, get_specific_question_details
-
-#from .policy_retrieval import get_specific_question_details
 
 QUESTION_STORE_DIR="/question_store_4/"
 ANSWER_STORE_DIR="/answer_store_4/"
@@ -25,7 +21,7 @@ ANSWER_STORE_DIR="/answer_store_4/"
 TMP = "tmp"
 
 IDS_FILE = "pq_ids_5.csv"
-
+STATUS_FILE = "pq_status.csv"
 
 question_store = None
 answer_store = None
@@ -47,21 +43,30 @@ def populate_embeddable_questions(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def populate_embeddable_answers(df: pd.DataFrame) -> pd.DataFrame:
-    """Replace the paragraph markers in the answer text with white space
-    to reduce the "noise" in the text.
-    """
-    df["answerText"] = df["answerText"].replace(to_replace="<p>", value=" ")
-    df["answerText"] = df["answerText"].replace(to_replace="</p>", value=" ")
-    return df
-
 
 def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
+    """Creates Langgraph Documents from the PQs.
+    Each Document contains a page_content text string,
+    an Id, and a collection of metadata.
 
-    if not os.getenv("OPENAI_API_KEY"):
-        print("Retrieving OPENAI API key")
-        os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
+    As we want both the question and the answer of a PQ to be searchable,
+    two Documents are created for each PQ, one for the question and one
+    for the answer.
 
+    Each PQ has an index, which we use as the Document Id.
+
+    For the question Document, we associate a set of metadata, but for
+    the associated answer, only the page_content and Id are populated.
+
+    Note: the answer text is also included as an item of metadata in
+    the associated question Document to simplify later processing.
+
+    Returns:
+        list[Document]: the Documents containing the question text
+        list[Document]: the Documents containing the answer text
+        list[int]: the ids of PQs successfully captured in Documents
+        list[int]: the ids of PQs failing to be captured in Documents
+    """
     question_documents = []
     answer_documents = []
 
@@ -96,14 +101,66 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
             success_ids.append(id)
 
         except Exception as e:
-            print(f"Error embedding question {question}: {e}")
+            print(f"Error creating Document for question {question}: {e}")
             failed_ids.append(id)
 
     return question_documents, answer_documents, success_ids, failed_ids
 
 
-def create_vector_store(s3_client, documents, embed_model, store_dir):
-    print(f"Would store here {store_dir}")
+async def get_pq_status():
+    status_ids = get_ids_from_file(STATUS_FILE)
+
+    if len(status_ids) == 0:
+        print("No statuses to check")
+
+    questions, not_retrieved_ids = get_specific_question_details(status_ids)
+    for question in questions:
+        print(question["answerText"])
+
+
+def get_ids_from_file(filename):
+    # load file containing the ids to check using pq api
+    # hack to overcome ruff insistence on avoiding /tmp
+    store_dir = "/" + TMP + QUESTION_STORE_DIR
+    id_file = store_dir + filename
+
+    status_ids = []
+
+    s3_client = S3Client()
+
+    exists = s3_client.check_object_existence(id_file)
+
+    if not exists:
+        print(f"PQ id file {id_file} not found - exiting!")
+    else:
+        create_directory_if_necessary(store_dir)
+
+        try:
+            s3_client.download_file(id_file, id_file)
+
+            with open(id_file) as csvfile:
+                reader = csv.reader(csvfile)
+                for row in reader:
+                    status_ids.append(int(row[0]))
+            print(f"Read {len(status_ids)} PQ ids from file.")
+        except Exception as e:
+            print(f"Error downloading/reading {id_file} from S3: {e}")
+
+    return status_ids
+
+
+def create_vector_store(s3_client: S3Client,
+                        documents: list[Document],
+                        embed_model: OpenAIEmbeddings,
+                        store_dir: str) -> FAISS:
+    """
+    Create a FAISS vector store from the supplied Documents using
+    the specified embedding model. The measure of inter-vector
+    distance is Cosine Similarity.
+
+    The vector store is saved in the local file system and then
+    uploaded to S3.
+    """
 
     vector_store = FAISS.from_documents(
                                       documents,
@@ -118,7 +175,17 @@ def create_vector_store(s3_client, documents, embed_model, store_dir):
     return vector_store
 
 
-def update_vector_store(s3_client, documents, embed_model, store_dir):
+def update_vector_store(s3_client: S3Client,
+                        documents: list[Document],
+                        embed_model: OpenAIEmbeddings,
+                        store_dir: str) -> FAISS:
+    """
+    Add Documents to an existing FAISS vector store.
+    The store is saved locally and then the index files
+    are uploaded to S3.
+
+    If the store dosn't exist, create it.
+    """
     vector_store = None
     exists = s3_client.check_object_existence(store_dir + "index.faiss")
 
@@ -148,66 +215,69 @@ def update_vector_store(s3_client, documents, embed_model, store_dir):
     return vector_store
 
 
-def load_store(s3_client, store_dir, embed_model):
-    # Load FAISS index back
+def load_store(s3_client: S3Client,
+               store_dir: str,
+               embed_model: OpenAIEmbeddings) -> FAISS:
+    """
+    Instantiates a FAISS vector store from its constituent index files,
+    which are downloaded from S3.
+    """
     store_path = Path(store_dir)
     if not store_path.exists():
         store_path.mkdir()
-        print(f"load_store:: Created directory {store_path}")
 
-    print("LOADING")
     faiss_file = store_dir + "index.faiss"
     pickle_file = store_dir + "index.pkl"
 
     s3_client.download_file(faiss_file, faiss_file)
     s3_client.download_file(pickle_file, pickle_file)
-    print("Loaded index files")
-    for file in Path(store_dir).iterdir():
-        print(f"Located {file}")
+
     try:
-       store = FAISS.load_local(store_dir, embed_model,allow_dangerous_deserialization=True)
-       print(f"Loaded FAISS from {store_dir}")
-       return store
+       return FAISS.load_local(store_dir, embed_model,allow_dangerous_deserialization=True)
     except Exception as e:
        print(f"Error creating FAISS: {e}")
        return None
 
 
-def create_directory_if_necessary(directory_name):
+def create_directory_if_necessary(directory_name: str):
     try:
-        print(f"Checking for ids directory {directory_name}")
         path = Path(directory_name)
         if not path.exists():
             path.mkdir()
-            print(f"Created directory {path}")
-        else:
-            print(f"Found {path}")
 
     except Exception as e:
         print(f"Error creating {path} directory: {e}")
 
 
 async def add_pqs_file(filename: str):
+    """
+    Downloads the specified file of PQs from S3, and then
+    update the question and answer vector stores from the Documents.
+
+    Finally, upload the index files to S3.
+    """
     global question_store, answer_store
 
+    # quick hack to overcome the ruff dislike of explicitly using /tmp
     temp_dir = "/" + TMP + "/"
-    create_directory_if_necessary(temp_dir)
     target = temp_dir + filename
+    question_dir = "/" + TMP + QUESTION_STORE_DIR
+    answer_dir = "/" + TMP + ANSWER_STORE_DIR
+
     s3_client = S3Client()
     exists = s3_client.check_object_existence(target)
 
     if not exists:
-       return {"message":f"Source file {target} does not exist."}
+        print(f"Source file {target} does not exist.")
+        return
+
+    create_directory_if_necessary(temp_dir)
 
     s3_client.download_file(target, target)
-    print(f"Downloaded {target}")
 
+    # The necessary PQ transformations are simpler using pandas
     df = pd.read_csv(target)
     df = populate_embeddable_questions(df)
-    df = populate_embeddable_answers(df)
-
-    question_dir = "/" + TMP + QUESTION_STORE_DIR
-    answer_dir = "/" + TMP + ANSWER_STORE_DIR
 
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
@@ -220,11 +290,10 @@ async def add_pqs_file(filename: str):
     except Exception as e:
         print(f"Failed to update stores with data from {target} : {e}")
 
-    print(f"File {filename} loaded into vector stores")
-    return None
+    return
 
+"""
 async def add_documents(count: int, offset: int):
-    """Add the specified number of documents to the stores."""
 
     global question_store, answer_store
 
@@ -257,6 +326,8 @@ async def add_documents(count: int, offset: int):
                 answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
             except Exception as e:
                 print(f"Failed to update stores with {questions} : {e}")
+"""
+
 
 async def get_pq_ids():
     global pq_ids
@@ -310,13 +381,7 @@ async def get_pq_ids():
             print(f"Read {len(pq_ids)} PQ ids from file.")
         except Exception as e:
             print(f"Error downloading/reading {pq_ids_file} from S3: {e}")
-    """
-    pq_ids = [1798613,1798075,1797992,1797598,1798009,1796692,1798097,1796902,1796972,1798010,
-               1796975,1798069,1798071,1796977,1797183,1798073,1797614,1796446,1797615,1796447,
-               1796349,1797684,1797286,1797862,1797984,1797983,1797982,1797981,1798119,1798158,
-               1798160,1797521,1796514,1796217,1795816,1794239,1793717,1791308,1788771,1788834,
-               1796687,1797297,1796348,1796363,1796442,1796440]
-    """
+
     return pq_ids
 
 
@@ -349,14 +414,12 @@ async def check_storage():
     return question_store, answer_store
 
 
-#async def store_documents(s3_client, embed_model, question_dir, answer_dir ,answering_body_id=13):
 async def store_documents(s3_client, embed_model, question_dir, answer_dir):
 
     global question_store, answer_store
 
     print("Retrieving documents for storage")
 
-#    questions = get_all_question_details(answering_body_id)
     pq_ids = await get_pq_ids()
     if len(pq_ids) > 0:
         print(f"First PQ id {pq_ids[0]}")
@@ -368,7 +431,6 @@ async def store_documents(s3_client, embed_model, question_dir, answer_dir):
         try:
             df = pd.DataFrame(questions)
             df = populate_embeddable_questions(df)
-            df = populate_embeddable_answers(df)
         except Exception as e:
             print(f"Failed to set Dataframe for questions {questions}:\n{e}")
             return None

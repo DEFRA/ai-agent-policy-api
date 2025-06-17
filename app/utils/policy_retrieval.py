@@ -206,7 +206,6 @@ def get_specific_question_details(pq_ids):
 
     # Process each ID
     for i, question_id in enumerate(pq_ids, 1):
-        print(f"Retrieving PQ id {question_id}")
         # Only print progress every 250 questions
         if i % 250 == 0 or i == 1:
             print(

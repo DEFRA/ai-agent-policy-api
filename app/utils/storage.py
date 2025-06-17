@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -107,7 +108,7 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
     return question_documents, answer_documents, success_ids, failed_ids
 
 def remove_pq_vectors(store, documents: list[Document]):
-    del_ids = [d["id"] for d in documents]
+    del_ids = [d.id for d in documents]
 
     try:
         del_status = store.delete(del_ids)
@@ -187,6 +188,10 @@ def get_ids_from_file(filename):
                 for row in reader:
                     status_ids.append(int(row[0]))
             print(f"Read {len(status_ids)} PQ ids from file.")
+
+            # now remove the file
+            os.remove(filename)
+
         except Exception as e:
             print(f"Error downloading/reading {id_file} from S3: {e}")
 

@@ -14,6 +14,7 @@ from app.langgraph_service import get_semantic_graph, run_semantic_chat
 from app.utils.storage import (
     add_pqs_file,
     get_answer_match,
+    get_pq_status,
     get_question_match,
     read_output,
     store_output,
@@ -48,8 +49,7 @@ async def search_questions(
     question: str = Query(..., description="The question to search for"),
     limit: int = Query(5, description="Number of results to return")
 ):
-
-    """Search for similar questions using cosine similarity"""
+    """Search for similar questions using the cosine similarity measure in FAISS"""
     # Regex for case-insensitive match for Affairs with or without trailing comma
     pattern = r"(?i)\baffairs\b[, ]*"
 
@@ -61,19 +61,17 @@ async def search_questions(
     top_results = []
     try:
         # Perform search
-        print("Before get question")
         top_results = get_question_match(
                             question=question,
                             limit=limit
                         )
-        print(f"After {top_results}")
         return {
             "results": top_results,
             "query": question,
         }
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error performing search: {str(e)}") from e
+            status_code=500, detail=f"Error performing search: {e}") from e
 
 
 @router.get("/search/answers")
@@ -81,7 +79,10 @@ async def search_answers(
     question: str = Query(..., description="The question to search for"),
     limit: int = Query(5, description="Number of results to return")
 ):
-    """Search for similar answers using cosine similarity"""
+    """Search for similar answers using the cosine similarity measure in FAISS.
+    This is a useful technique to supplement the question search, as answers to
+    some questions may provide an insight.
+    """
     top_results = []
     try:
         # Perform search
@@ -89,27 +90,27 @@ async def search_answers(
                             question=question,
                             limit=limit
                         )
-
         return {
             "results": top_results,
             "query": question,
         }
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error performing search: {str(e)}") from e
+            status_code=500, detail=f"Error performing search: {e}") from e
 
 
 @router.post("/chat/background_semantic")
 async def semantic_chat_background(request: SemanticChatRequest,
-                                   background_tasks: BackgroundTasks):
+                                   background_tasks: BackgroundTasks) -> dict[str, str]:
     """
-    LangGraph-powered semantic chat endpoint.
-
-    Performs semantic search, generates AI response, and returns structured JSON output.
-    Workflow: Search → LLM Summarization → JSON Formatting
+    Triggers a background task to:
+      perform a semantic search
+      generate an AI response
+      return structured JSON output.
 
     Returns:
-        JSON object ready for frontend consumption
+        A dictionary containing the time-based tag for use in querying the
+        generated result.
     """
 
     tag = time.strftime("%H%M%S", time.localtime())
@@ -117,7 +118,21 @@ async def semantic_chat_background(request: SemanticChatRequest,
     background_tasks.add_task(semantic_pipeline, request, tag)
     return {"message":f"Semantic pipeline is running. Use the tag {tag} to retrieve the output." }
 
-def semantic_pipeline(request, tag):
+
+def semantic_pipeline(request: SemanticChatRequest, tag: str):
+    """
+    LangGraph-powered semantic chat endpoint.
+
+    Performs semantic search, generates AI response, and returns structured JSON output.
+    Workflow: Search → LLM Summarization → JSON Formatting
+
+    The pipeline creates output in JSON format that is stored in S3 for
+    collection by other services.
+
+    Args:
+        request: the Pydantic model containing the question
+        tag: string identifier to identify the output stored by this function
+    """
 
     semantic_chat_graph = get_semantic_graph()
 
@@ -153,15 +168,15 @@ def semantic_pipeline(request, tag):
                     "query": request.question,
                     "answer": result.get("response", "Error generating response"),
                     "search_results": result.get("search_results", []),
-                    "error": f"JSON parsing failed: {str(e)}",
+                    "error": f"JSON parsing failed: {e}",
                     "raw_output": json_output_string
             }
 
         else:
-            output = {"message":"No JSON output generated"}
+            output = {"message":"No semantic chat output generated"}
 
     except Exception:
-        output = {"message":"Error in semantic chat workflow: {str(e)}"}
+        output = {"message":"Error in semantic chat workflow: {e}"}
 
     store_output("semantic_chat_" + tag + ".json",output)
 
@@ -178,6 +193,12 @@ async def semantic_chat_result(tag: str = Query("", description="Semantic Query 
 @router.post("/chat/semantic")
 async def semantic_chat(request: SemanticChatRequest):
     """
+    Direct invocation of the semantic pipeline, but may time out.
+
+    The semantic_chat_background & semantic_chat_result functions are
+    a replacement for this function, by invoking the pipeline as a
+    background process.
+
     LangGraph-powered semantic chat endpoint.
 
     Performs semantic search, generates AI response, and returns structured JSON output.
@@ -186,9 +207,6 @@ async def semantic_chat(request: SemanticChatRequest):
     Returns:
         JSON object ready for frontend consumption
     """
- #   if df.empty:
- #       raise HTTPException(status_code=500, detail="Data not loaded properly")
-
     semantic_chat_graph = get_semantic_graph()
 
     if semantic_chat_graph is None:
@@ -226,14 +244,14 @@ async def semantic_chat(request: SemanticChatRequest):
                 "query": request.question,
                 "answer": result.get("response", "Error generating response"),
                 "search_results": result.get("search_results", []),
-                "error": f"JSON parsing failed: {str(e)}",
+                "error": f"JSON parsing failed: {e}",
                 "raw_output": json_output_string
             }
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error in semantic chat workflow: {str(e)}"
+            detail=f"Error in semantic chat workflow: {e}"
         ) from e
 
 
@@ -242,10 +260,18 @@ async def upload_questions(
     background_tasks: BackgroundTasks,
     pq_file: str = Query(..., description="The name of the file in S3 containing the PQs to insert into the stores")
     ):
-    """Add a number of documents to the store using the saved ids"""
+    """Adds PQs from the named file."""
 
     background_tasks.add_task(add_pqs_file, pq_file)
     return {"message":f"Uploading PQs from {pq_file}" }
+
+
+@router.get("/status")
+async def answer_status(background_tasks: BackgroundTasks):
+    """Retrieves PQs from the status file."""
+
+    background_tasks.add_task(get_pq_status)
+    return {"message":"Retrieving PQs from status file" }
 
 @router.get("/db")
 async def db_query(db=Depends(get_db)):

@@ -203,7 +203,8 @@ def get_ids_from_file(filename: str) -> list[str]:
             print(f"Error downloading/reading {id_file} from S3: {e}")
 
         try:
-            print(stat.filemode(os.stat(id_file).st_mode))
+            fstat = stat.filemode(os.stat(id_file).st_mode)
+            print(f"Status of file {id_file}: {fstat}")
             # now remove the file
             os.remove(id_file)
         except Exception as e:
@@ -212,12 +213,17 @@ def get_ids_from_file(filename: str) -> list[str]:
     return ids
 
 
-def write_ids_file(filename):
+def write_ids_file(filename:str, ids:list[str]):
+    store_dir = "/" + TMP + QUESTION_STORE_DIR
+    id_file = store_dir + filename
+
+    fstat = stat.filemode(os.stat(id_file).st_mode)
+    print(f"Status of file {id_file}: {fstat}")
 
     try:
         with open(filename, "w") as csvfile:
             writer = csv.writer(csvfile)
-            for pid in pq_ids:
+            for pid in ids:
                 writer.writerow([pid])
     except Exception as e:
         print(f"Error storing ids in file {filename}: {e}")

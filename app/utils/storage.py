@@ -15,7 +15,11 @@ from langchain_openai import OpenAIEmbeddings
 
 from app.common.s3 import S3Client
 
-from .policy_retrieval import get_all_question_ids, get_specific_question_details
+from .policy_retrieval import (
+    get_all_question_details,
+    get_all_question_ids,
+    get_specific_question_details,
+)
 
 QUESTION_STORE_DIR="/question_store_4/"
 ANSWER_STORE_DIR="/answer_store_4/"
@@ -138,7 +142,10 @@ def retrieve_latest_pqs():
     lines = read_and_delete_csv_file(UPDATE_FILE)
     last_retrieved = lines[0]
     print(f"Last retrieved on {last_retrieved}")
-
+    questions = get_all_question_details(answering_body_id=13,
+                                         house="Commons",
+                                         tabled_from=last_retrieved)
+    print(f"Retrieved {len(questions)} PQs")
 
 def update_answers():
 

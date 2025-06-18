@@ -167,7 +167,7 @@ async def get_pq_status():
     except Exception as e:
         print(f"Failed to update stores with answer data : {e}")
 
-    write_ids_file(STATUS_FILE)
+    write_ids_file(STATUS_FILE, to_check_ids)
 
 
 def get_ids_from_file(filename: str) -> list[str]:

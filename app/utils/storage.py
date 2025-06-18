@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import stat
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -188,12 +189,15 @@ def get_ids_from_file(filename):
                 for row in reader:
                     status_ids.append(int(row[0]))
             print(f"Read {len(status_ids)} PQ ids from file.")
-
-            # now remove the file
-            os.remove(filename)
-
         except Exception as e:
             print(f"Error downloading/reading {id_file} from S3: {e}")
+
+        try:
+            print(stat.filemode(os.stat(filename).st_mode))
+            # now remove the file
+            os.remove(filename)
+        except Exception as e:
+            print(f"Error deleting {id_file}: {e}")
 
     return status_ids
 

@@ -7,7 +7,7 @@ import requests
 logger = getLogger(__name__)
 
 
-def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons"):
+def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons", tabled_from=None):
     """
     Fetch written question IDs from the Parliament API
     Args:
@@ -34,6 +34,9 @@ def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons
 
     if answering_body_id is not None:
         params["answeringBodies"] = str(answering_body_id)
+
+    if tabled_from is not None:
+        params["tabledWhenFrom"] = tabled_from
 
     try:
         print(f"Fetching ids with skip {skip}")
@@ -63,7 +66,7 @@ def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons
         return []
 
 
-def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=5_000):
+def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=5_000, tabled_from=None):
     """
     Fetch all written question IDs from the Parliament API, handling pagination
     Args:
@@ -82,7 +85,8 @@ def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=5_0
             answering_body_id=answering_body_id,
             skip=skip,
             take=batch_size,
-            house=house
+            house=house,
+            tabled_from=tabled_from
         )
 
         if not batch_ids:  # If we get no results, we've reached the end
@@ -133,25 +137,21 @@ def get_question_details(question_id: int) -> dict[str, Any]:
         return {}
 
 
-def get_all_question_details(answering_body_id: int = None, house: str = "Commons"):
+def get_all_question_details(answering_body_id: int = None, house: str = "Commons", tabled_from: str=None):
     """
     Fetch detailed information for all questions and save to a DataFrame
     Args:
         answering_body_id (int, optional): Specific answering body ID to filter by
         house (str, optional): House to query ('Commons' or 'Lords')
+        tabled_from (str, optional): the minimum tabled date for PQs
     Returns:
         pd.DataFrame: DataFrame containing all question details
     """
     # Get all question IDs
-    print("Fetching all question IDs...")
-    print(f"Params {answering_body_id}, {house}")
-#    all_ids = get_all_question_ids(
-#        answering_body_id=answering_body_id, house=house)
-    all_ids = [1798613,1798075,1797992,1797598,1798009,1796692,1798097,1796902,1796972,1798010,
-               1796975,1798069,1798071,1796977,1797183,1798073,1797614,1796446,1797615,1796447,
-               1796349,1797684,1797286,1797862,1797984,1797983,1797982,1797981,1798119,1798158,
-               1798160,1797521,1796514,1796217,1795816,1794239,1793717,1791308,1788771,1788834,
-               1796687,1797297,1796348,1796363,1796442,1796440]
+    print("Fetching all questions with the following constraints:")
+    print(f"Params {answering_body_id}, {house}, {tabled_from}")
+    all_ids = get_all_question_ids(
+        answering_body_id=answering_body_id, house=house, tabled_from=tabled_from)
 
     # Initialize list to store all question details
     all_questions = []
@@ -160,13 +160,10 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
 
     # Process each ID
     for i, question_id in enumerate(all_ids, 1):
-        if error_count > 10:
-            print(f"Exceeded error threshold {error_count}")
-            break
         # Only print progress every 250 questions
         if i % 250 == 0 or i == 1:
             print(
-                f"Processing question {i}/{len(all_ids)} (ID: {question_id})")
+                f"Retrieving question {i}/{len(all_ids)} (ID: {question_id})")
 
         # Get question details
         question_data = get_question_details(question_id)
@@ -182,7 +179,7 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
             error_count += 1
 
         # Add a small delay to avoid overwhelming the API
-        time.sleep(0.1)  # 100ms delay between requests
+        time.sleep(0.2)  # 200ms delay between requests
 
     return all_questions
 

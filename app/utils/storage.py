@@ -108,27 +108,33 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
 
     return question_documents, answer_documents, success_ids, failed_ids
 
-def remove_pq_vectors(store, documents: list[Document]):
+def remove_pq_vectors(store, documents: list[Document]) -> bool:
+    """Deletes the vectors in the passed vector store whose ids
+    are contained in the supplied Documents.
+    Returns a success status.
+    """
     del_ids = [d.id for d in documents]
 
     try:
+        print(f"Removing PQ ids {del_ids}")
         del_status = store.delete(del_ids)
         print(f"Deletion {del_status=}")
+        return True
     except Exception as e:
         print(f"Deletion of vectors failed: {e}")
-
+        return False
 
 async def get_pq_status():
 
     global question_store, answer_store
 
-    status_ids = get_ids_from_file(STATUS_FILE)
+    ids = get_ids_from_file(STATUS_FILE)
 
-    if len(status_ids) == 0:
+    if len(ids) == 0:
         print("No statuses to check")
         return
 
-    questions, not_retrieved_ids = get_specific_question_details(status_ids)
+    questions, not_retrieved_ids = get_specific_question_details(ids)
 
     # compile the list of ids for further checking, starting with the ones that failed to retrieve
     to_check_ids = not_retrieved_ids
@@ -164,13 +170,17 @@ async def get_pq_status():
     write_ids_file(STATUS_FILE)
 
 
-def get_ids_from_file(filename):
+def get_ids_from_file(filename: str) -> list[str]:
+    """Downloads the named file from S3, and returns the PQ ids
+    contained in that file.
+    The file is deleted to avoid accidental reuse.
+    """
     # load file containing the ids to check using pq api
     # hack to overcome ruff insistence on avoiding /tmp
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     id_file = store_dir + filename
 
-    status_ids = []
+    ids = []
 
     s3_client = S3Client()
 
@@ -187,19 +197,19 @@ def get_ids_from_file(filename):
             with open(id_file) as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
-                    status_ids.append(int(row[0]))
-            print(f"Read {len(status_ids)} PQ ids from file.")
+                    ids.append(int(row[0]))
+            print(f"Read {len(ids)} PQ ids from file.")
         except Exception as e:
             print(f"Error downloading/reading {id_file} from S3: {e}")
 
         try:
-            print(stat.filemode(os.stat(filename).st_mode))
+            print(stat.filemode(os.stat(id_file).st_mode))
             # now remove the file
-            os.remove(filename)
+            os.remove(id_file)
         except Exception as e:
             print(f"Error deleting {id_file}: {e}")
 
-    return status_ids
+    return ids
 
 
 def write_ids_file(filename):

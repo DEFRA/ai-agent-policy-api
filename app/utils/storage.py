@@ -217,24 +217,21 @@ def write_ids_file(filename:str, ids:list[str]):
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     id_file = store_dir + filename
 
-    fstat = stat.filemode(os.stat(id_file).st_mode)
-    print(f"Status of file {id_file}: {fstat}")
-
     try:
-        with open(filename, "w") as csvfile:
+        with open(id_file, "w") as csvfile:
             writer = csv.writer(csvfile)
             for pid in ids:
                 writer.writerow([pid])
     except Exception as e:
-        print(f"Error storing ids in file {filename}: {e}")
+        print(f"Error storing ids in file {id_file}: {e}")
         return
 
     s3_client = S3Client()
 
     try:
-        s3_client.upload_file(filename)
+        s3_client.upload_file(id_file)
     except Exception as e:
-        print(f"Error storing  {filename} in S3: {e}")
+        print(f"Error storing  {id_file} in S3: {e}")
 
 
 def create_vector_store(s3_client: S3Client,

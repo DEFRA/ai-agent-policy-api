@@ -14,10 +14,10 @@ from app.langgraph_service import get_semantic_graph, run_semantic_chat
 from app.utils.storage import (
     add_pqs_file,
     get_answer_match,
-    get_pq_status,
     get_question_match,
     read_output,
     store_output,
+    update_pqs,
 )
 
 router = APIRouter(prefix="/policy")
@@ -270,7 +270,7 @@ async def upload_questions(
 async def answer_status(background_tasks: BackgroundTasks):
     """Retrieves PQs from the status file."""
 
-    background_tasks.add_task(get_pq_status)
+    background_tasks.add_task(update_pqs)
     return {"message":"Retrieving PQs from status file" }
 
 @router.get("/db")

@@ -24,6 +24,7 @@ TMP = "tmp"
 
 IDS_FILE = "pq_ids_5.csv"
 STATUS_FILE = "pq_status.csv"
+UPDATE_FILE = "pq_update.csv"
 
 question_store = None
 answer_store = None
@@ -124,11 +125,26 @@ def remove_pq_vectors(store, documents: list[Document]) -> bool:
         print(f"Deletion of vectors failed: {e}")
         return False
 
-async def get_pq_status():
+async def update_pqs():
+
+    update_answers()
+
+    retrieve_latest_pqs()
+
+
+def retrieve_latest_pqs():
+    global question_store, answer_store
+
+    lines = read_and_delete_csv_file(UPDATE_FILE)
+    last_retrieved = lines[0]
+    print(f"Last retrieved on {last_retrieved}")
+
+
+def update_answers():
 
     global question_store, answer_store
 
-    ids = get_ids_from_file(STATUS_FILE)
+    ids = read_and_delete_csv_file(STATUS_FILE)
 
     if len(ids) == 0:
         print("No statuses to check")
@@ -170,48 +186,47 @@ async def get_pq_status():
     write_ids_file(STATUS_FILE, to_check_ids)
 
 
-def get_ids_from_file(filename: str) -> list[str]:
-    """Downloads the named file from S3, and returns the PQ ids
-    contained in that file.
+def read_and_delete_csv_file(filename: str) -> list[str]:
+    """Downloads the named file from S3, and returns the
+    contents as a list of strings.
     The file is deleted to avoid accidental reuse.
     """
     # load file containing the ids to check using pq api
     # hack to overcome ruff insistence on avoiding /tmp
     store_dir = "/" + TMP + QUESTION_STORE_DIR
-    id_file = store_dir + filename
+    file = store_dir + filename
 
-    ids = []
+    lines = []
 
     s3_client = S3Client()
 
-    exists = s3_client.check_object_existence(id_file)
+    exists = s3_client.check_object_existence(file)
 
     if not exists:
-        print(f"PQ id file {id_file} not found - exiting!")
+        print(f"File {file} not found - exiting!")
     else:
         create_directory_if_necessary(store_dir)
 
         try:
-            s3_client.download_file(id_file, id_file)
+            s3_client.download_file(file, file)
 
-            with open(id_file) as csvfile:
+            with open(file) as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
-                    ids.append(int(row[0]))
-            print(f"Read {len(ids)} PQ ids from file.")
+                    lines.append(int(row[0]))
+            print(f"Read {len(lines)} items from file.")
         except Exception as e:
-            print(f"Error downloading/reading {id_file} from S3: {e}")
+            print(f"Error downloading/reading {file} from S3: {e}")
 
         try:
-            fstat = stat.filemode(os.stat(id_file).st_mode)
-            print(f"Status of file {id_file}: {fstat}")
+            fstat = stat.filemode(os.stat(file).st_mode)
+            print(f"Status of file {file}: {fstat}")
             # now remove the file
-            os.remove(id_file)
+            os.remove(file)
         except Exception as e:
-            print(f"Error deleting {id_file}: {e}")
+            print(f"Error deleting {file}: {e}")
 
-    return ids
-
+    return lines
 
 def write_ids_file(filename:str, ids:list[str]):
     store_dir = "/" + TMP + QUESTION_STORE_DIR

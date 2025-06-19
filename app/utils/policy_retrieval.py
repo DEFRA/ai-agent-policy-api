@@ -193,9 +193,6 @@ def get_specific_question_details(pq_ids):
     Returns:
         pd.DataFrame: DataFrame containing all question details
     """
-    # Get all question IDs
-    print(f"Fetching PQs ids: {pq_ids}")
-
     # Initialize list to store all question details
     all_questions = []
 
@@ -220,9 +217,10 @@ def get_specific_question_details(pq_ids):
                     f"Warning: No 'value' field found for question {question_id}")
         else:
             failed_ids.append(question_id)
-            print(f"Failed ids so far {failed_ids}")
 
         # Add a small delay to avoid overwhelming the API
         time.sleep(0.2)  # 200ms delay between requests
+
+    print(f"Failed ids: {failed_ids}")
 
     return all_questions, failed_ids

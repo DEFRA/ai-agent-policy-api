@@ -172,6 +172,8 @@ def remove_pq_vectors(store, documents: list[Document]) -> None:
     return
 
 async def update_pqs():
+    print("Updating PQs")
+
     update_answers()
     retrieve_latest_pqs()
 
@@ -179,6 +181,11 @@ async def update_pqs():
 def retrieve_latest_pqs():
     missing_ids = get_missing_pq_ids()
     questions, not_retrieved_ids = get_specific_question_details(missing_ids)
+
+    # Any PQs not successfully retrieved should be picked up on the next run
+    if not_retrieved_ids:
+        print(f"The following PQs were not retrieved successfully: {not_retrieved_ids}")
+
     update_stores(questions)
 
 
@@ -186,17 +193,21 @@ def update_answers():
 
     ids = read_and_delete_csv_file(STATUS_FILE)
 
-    if len(ids) == 0:
+    if len(ids) > 0:
+        print("The following ids will be checked to discover whether they have been answered")
+        print(ids)
+    else:
         print("No statuses to check")
         return
 
     questions, not_retrieved_ids = get_specific_question_details(ids)
 
     # compile the list of ids for further checking, starting with the ones that failed to retrieve
-    to_check_ids = not_retrieved_ids
+    if not_retrieved_ids:
+        print(f"The following PQs requiring answers were not retrieved successfully: {not_retrieved_ids}")
 
     # now update the PQs that do have answers while storing the ids that still don't
-    update_stores(questions, to_check_ids)
+    update_stores(questions, not_retrieved_ids)
 
 
 def update_stores(questions, to_check_ids=None):

@@ -135,7 +135,11 @@ def get_stored_pq_ids():
 
         pq_id_map = vector_store.index_to_docstore_id
 
-        print(f"Map type {type(pq_id_map)}")
+        for index, (key, value) in enumerate(pq_id_map.items()):
+            print(f"Key {key} -> {value}")
+            if index > 10:
+                break
+
     except Exception as e:
         print(f"Failed to load vector store at {store_dir}: {e}")
 

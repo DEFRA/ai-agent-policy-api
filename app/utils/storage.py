@@ -113,32 +113,62 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
 
     return question_documents, answer_documents, success_ids, failed_ids
 
-def remove_pq_vectors(store, documents: list[Document]) -> bool:
+
+def get_stored_pq_ids():
+    """Retrieves the PQ ids from the Question store - we should have the
+    same ids in the Answer store
+    """
+    s3_client = S3Client()
+    embed_model = OpenAIEmbeddings(
+                       model="text-embedding-3-small",
+                    )
+
+    store_dir = "/" + TMP + QUESTION_STORE_DIR
+    exists = s3_client.check_object_existence(store_dir + "index.faiss")
+
+    if not exists:
+        print("No PQs are stored in {store_dir}")
+        return []
+
+    try:
+        vector_store = load_store(s3_client, store_dir, embed_model)
+
+        pq_id_map = vector_store.index_to_docstore_id
+
+        print(f"Map type {type(pq_id_map)}")
+    except Exception as e:
+        print(f"Failed to load vector store at {store_dir}: {e}")
+
+    return vector_store
+
+def remove_pq_vectors(store, documents: list[Document]) -> None:
     """Deletes the vectors in the passed vector store whose ids
     are contained in the supplied Documents.
     Returns a success status.
     """
     del_ids = [d.id for d in documents]
 
-    try:
-        print(f"Removing PQ ids {del_ids}")
-        del_status = store.delete(del_ids)
-        print(f"Deletion {del_status=}")
-        return True
-    except Exception as e:
-        print(f"Deletion of vectors failed: {e}")
-        return False
+    # To avoid one failed deletion ending in failure
+    # delete single PQs rather than as a batch
+    for pid in del_ids:
+        try:
+            print(f"Removing PQ id {pid}")
+            del_status = store.delete([pid])
+            print(f"Deletion {del_status=}")
+        except Exception as e:
+            print(f"Deletion of vector failed: {e}")
+    return
 
 async def update_pqs():
 
-    update_answers()
+    get_stored_pq_ids()
 
-    retrieve_latest_pqs()
+#    update_answers()
+
+#    retrieve_latest_pqs()
 
 
 def retrieve_latest_pqs():
-    global question_store, answer_store
-
     lines = read_and_delete_csv_file(UPDATE_FILE)
     last_retrieved = lines[0]
     print(f"Last retrieved on {last_retrieved}")

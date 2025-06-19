@@ -123,6 +123,7 @@ def get_question_details(question_id: str) -> dict[str, Any]:
     endpoint = f"{base_url}/writtenquestions/questions/{question_id}"
 
     try:
+        print(f"Retrieve PQ {question_id=}")
         response = requests.get(
             endpoint,
             headers={"Accept": "application/json",
@@ -131,6 +132,7 @@ def get_question_details(question_id: str) -> dict[str, Any]:
             proxies=proxies
         )
         response.raise_for_status()
+        print(f"SUCCESSFUL Retrieval of PQ {question_id=}")
         return response.json()
     except Exception as e:
         print(f"Error fetching {question_id=}: {e}")

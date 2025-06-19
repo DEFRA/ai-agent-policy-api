@@ -220,7 +220,7 @@ def read_and_delete_csv_file(filename: str) -> list[str]:
             with open(file) as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
-                    lines.append(int(row[0]))
+                    lines.append(row[0])
             print(f"Read {len(lines)} items from file.")
         except Exception as e:
             print(f"Error downloading/reading {file} from S3: {e}")

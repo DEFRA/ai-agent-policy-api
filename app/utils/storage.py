@@ -170,24 +170,22 @@ def update_stores(questions, to_check_ids=None):
 
     global question_store, answer_store
 
-    to_update = []
+    if not to_check_ids:
+        to_check_ids = []
 
     for question in questions:
-        if question["answerText"]:
-            to_update.append(question)
-        else:
+        if not question["answerText"]:
             to_check_ids.append(question["id"])
+            # add an empty paragraph as a null answertext cannot be indexed
+            question["answerText"] = "<p></p>"
 
     s3_client = S3Client()
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                     )
-    if not to_update:
-        print("No retrieved PQs have answers, so update exiting.")
-        return
 
     # The necessary PQ transformations are simpler using pandas
-    df = pd.DataFrame(to_update)
+    df = pd.DataFrame(questions)
     df = populate_embeddable_questions(df)
 
     # quick hack to overcome the ruff dislike of explicitly using /tmp

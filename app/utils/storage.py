@@ -16,7 +16,6 @@ from langchain_openai import OpenAIEmbeddings
 from app.common.s3 import S3Client
 
 from .policy_retrieval import (
-    get_all_question_details,
     get_all_question_ids,
     get_specific_question_details,
 )
@@ -114,6 +113,18 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
     return question_documents, answer_documents, success_ids, failed_ids
 
 
+def get_missing_pq_ids():
+    stored_ids = get_stored_pq_ids()
+
+    try:
+        all_ids = get_all_question_ids(answering_body_id=13, house="Commons")
+        print(f"Retrieved {len(all_ids)} PQs from parliament api")
+    except Exception as e:
+        print(f"Error retrieving ids {e}")
+        return []
+
+    return list(set(all_ids) - set(stored_ids))
+
 def get_stored_pq_ids():
     """Retrieves the PQ ids from the Question store - we should have the
     same ids in the Answer store
@@ -126,24 +137,21 @@ def get_stored_pq_ids():
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     exists = s3_client.check_object_existence(store_dir + "index.faiss")
 
+    pids = []
+
     if not exists:
         print("No PQs are stored in {store_dir}")
-        return []
+        return pids
 
     try:
         vector_store = load_store(s3_client, store_dir, embed_model)
 
-        pq_id_map = vector_store.index_to_docstore_id
-
-        for index, (key, value) in enumerate(pq_id_map.items()):
-            print(f"Key {key} -> {value}")
-            if index > 10:
-                break
+        pids = list(vector_store.index_to_docstore_id.values())
 
     except Exception as e:
         print(f"Failed to load vector store at {store_dir}: {e}")
 
-    return vector_store
+    return pids
 
 def remove_pq_vectors(store, documents: list[Document]) -> None:
     """Deletes the vectors in the passed vector store whose ids
@@ -164,22 +172,13 @@ def remove_pq_vectors(store, documents: list[Document]) -> None:
     return
 
 async def update_pqs():
-
-    get_stored_pq_ids()
-
-#    update_answers()
-
-#    retrieve_latest_pqs()
+    update_answers()
+    retrieve_latest_pqs()
 
 
 def retrieve_latest_pqs():
-    lines = read_and_delete_csv_file(UPDATE_FILE)
-    last_retrieved = lines[0]
-    print(f"Last retrieved on {last_retrieved}")
-    questions = get_all_question_details(answering_body_id=13,
-                                         house="Commons",
-                                         tabled_from=last_retrieved)
-    print(f"Retrieved {len(questions)} PQs")
+    missing_ids = get_missing_pq_ids()
+    questions, not_retrieved_ids = get_specific_question_details(missing_ids)
     update_stores(questions)
 
 

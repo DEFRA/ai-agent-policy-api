@@ -104,11 +104,11 @@ def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=5_0
     return all_ids
 
 
-def get_question_details(question_id: int) -> dict[str, Any]:
+def get_question_details(question_id: str) -> dict[str, Any]:
     """
     Fetch detailed information for a specific question ID
     Args:
-        question_id (int): The ID of the question to fetch
+        question_id (str): The ID of the question to fetch
     Returns:
         dict: The question details
     """

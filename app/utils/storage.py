@@ -146,10 +146,10 @@ def retrieve_latest_pqs():
                                          house="Commons",
                                          tabled_from=last_retrieved)
     print(f"Retrieved {len(questions)} PQs")
+    update_stores(questions)
+
 
 def update_answers():
-
-    global question_store, answer_store
 
     ids = read_and_delete_csv_file(STATUS_FILE)
 
@@ -161,6 +161,15 @@ def update_answers():
 
     # compile the list of ids for further checking, starting with the ones that failed to retrieve
     to_check_ids = not_retrieved_ids
+
+    # now update the PQs that do have answers while storing the ids that still don't
+    update_stores(questions, to_check_ids)
+
+
+def update_stores(questions, to_check_ids=None):
+
+    global question_store, answer_store
+
     to_update = []
 
     for question in questions:
@@ -173,6 +182,9 @@ def update_answers():
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                     )
+    if not to_update:
+        print("No retrieved PQs have answers, so update exiting.")
+        return
 
     # The necessary PQ transformations are simpler using pandas
     df = pd.DataFrame(to_update)

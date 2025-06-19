@@ -159,17 +159,18 @@ def remove_pq_vectors(store, documents: list[Document]) -> None:
     Returns a success status.
     """
     del_ids = [d.id for d in documents]
-
+    success_ids = []
+    failure_ids = []
     # To avoid one failed deletion ending in failure
     # delete single PQs rather than as a batch
     for pid in del_ids:
         try:
-            print(f"Removing PQ id {pid}")
-            del_status = store.delete([pid])
-            print(f"Deletion {del_status=}")
+            store.delete([pid])
+            success_ids.append(pid)
         except Exception as e:
             print(f"Deletion of vector failed: {e}")
-    return
+            failure_ids.append(pid)
+    return success_ids, failure_ids
 
 async def update_pqs():
     print("Updating PQs")
@@ -180,6 +181,7 @@ async def update_pqs():
 
 def retrieve_latest_pqs():
     missing_ids = get_missing_pq_ids()
+    print(f"The following ids are missing from the store: {missing_ids}")
     questions, not_retrieved_ids = get_specific_question_details(missing_ids)
 
     # Any PQs not successfully retrieved should be picked up on the next run
@@ -239,6 +241,7 @@ def update_stores(questions, to_check_ids=None):
 
     try:
         question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
+
         question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
         answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:
@@ -347,6 +350,7 @@ def update_vector_store(s3_client: S3Client,
 
     If the store dosn't exist, create it.
     """
+    print(f"Updating store with {len(documents)} PQs")
     vector_store = None
     exists = s3_client.check_object_existence(store_dir + "index.faiss")
 
@@ -360,16 +364,19 @@ def update_vector_store(s3_client: S3Client,
 
     try:
         vector_store = load_store(s3_client, store_dir, embed_model)
+        num_documents = len(vector_store.index_to_docstore_id)
+        print(f"Total number of documents prior to update: {num_documents}")
 
         # remove any that have already been inserted, as upsert is not available
-        remove_pq_vectors(vector_store, documents)
+        success_ids, failure_ids = remove_pq_vectors(vector_store, documents)
+        print(f"These ids were successfully removed {success_ids}\nThese were not removed {failure_ids}")
 
         vector_store.add_documents(documents=documents)
         # Save vector store
         vector_store.save_local(store_dir)
 
         num_documents = len(vector_store.index_to_docstore_id)
-        print(f"Total number of documents: {num_documents}")
+        print(f"Total number of documents post update: {num_documents}")
 
         s3_client.upload_file(store_dir + "index.faiss")
         s3_client.upload_file(store_dir + "index.pkl")

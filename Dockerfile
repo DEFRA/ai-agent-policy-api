@@ -53,5 +53,5 @@ COPY . .
 # Expose the port that the application listens on.
 EXPOSE 8085
 
-
+RUN crontab crontab.txt
 CMD ["/start.sh"]

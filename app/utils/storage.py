@@ -184,14 +184,13 @@ async def update_pqs():
 def retrieve_latest_pqs():
     missing_ids = get_missing_pq_ids()
     print(f"Count of missing PQs: {len(missing_ids)}")
-    print(f"The following ids are missing from the store: {missing_ids[:5]}")
-#    questions, not_retrieved_ids = get_specific_question_details(missing_ids)
+    questions, not_retrieved_ids = get_specific_question_details(missing_ids)
 
     # Any PQs not successfully retrieved should be picked up on the next run
- #   if not_retrieved_ids:
- #       print(f"The following PQs were not retrieved successfully: {not_retrieved_ids}")
+    if not_retrieved_ids:
+        print(f"The following PQs were not retrieved successfully: {not_retrieved_ids}")
 
-#    update_stores(questions)
+    update_stores(questions)
 
 
 def update_answers():

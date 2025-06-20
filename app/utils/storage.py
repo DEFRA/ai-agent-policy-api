@@ -120,6 +120,7 @@ def get_missing_pq_ids():
     try:
         all_ids = get_all_question_ids(answering_body_id=13, house="Commons")
         print(f"Retrieved {len(all_ids)} PQs from parliament api")
+        print(f"First few from Parliament: {all_ids[:5]}")
     except Exception as e:
         print(f"Error retrieving ids {e}")
         return []
@@ -147,8 +148,7 @@ def get_stored_pq_ids():
     try:
         vector_store = load_store(s3_client, store_dir, embed_model)
 
-        pids = list(vector_store.index_to_docstore_id.values())
-        print(pids[:5])
+        pids = [int(pid) for pid in vector_store.index_to_docstore_id.values()]
 
     except Exception as e:
         print(f"Failed to load vector store at {store_dir}: {e}")
@@ -182,9 +182,9 @@ async def update_pqs():
 
 
 def retrieve_latest_pqs():
-#    missing_ids = get_missing_pq_ids()
-    get_missing_pq_ids()
-#    print(f"The following ids are missing from the store: {missing_ids}")
+    missing_ids = get_missing_pq_ids()
+    print(f"Count of missing PQs: {len(missing_ids)}")
+    print(f"The following ids are missing from the store: {missing_ids[:5]}")
 #    questions, not_retrieved_ids = get_specific_question_details(missing_ids)
 
     # Any PQs not successfully retrieved should be picked up on the next run

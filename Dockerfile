@@ -21,6 +21,9 @@ RUN apt-get update && apt-get install -y curl cron
 
 WORKDIR /app
 
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
 ARG UID=10001
@@ -50,7 +53,5 @@ COPY . .
 # Expose the port that the application listens on.
 EXPOSE 8085
 
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
 
 CMD ["/start.sh"]

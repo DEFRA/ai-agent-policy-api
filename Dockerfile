@@ -17,7 +17,7 @@ ENV UVICORN_PORT=8085
 
 # Add curl to template.
 # CDP PLATFORM HEALTHCHECK REQUIREMENT
-RUN apt-get update && apt-get install curl -y
+RUN apt-get update && apt-get install -y curl cron
 
 WORKDIR /app
 
@@ -50,5 +50,7 @@ COPY . .
 # Expose the port that the application listens on.
 EXPOSE 8085
 
-# Run the application.
-CMD ["uvicorn", "app.main:app", "--host=0.0.0.0", "--log-config", "logging.json", "--timeout-keep-alive=10000"]
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]

@@ -113,7 +113,7 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
     return question_documents, answer_documents, success_ids, failed_ids
 
 
-def get_missing_pq_ids():
+def get_missing_pq_ids() -> list[int]:
     stored_ids = get_stored_pq_ids()
     print(f"The stored PQs count: {len(stored_ids)}")
     print(f"First few {stored_ids[:5]}")
@@ -127,7 +127,7 @@ def get_missing_pq_ids():
 
     return list(set(all_ids) - set(stored_ids))
 
-def get_stored_pq_ids():
+def get_stored_pq_ids() -> list[int]:
     """Retrieves the PQ ids from the Question store - we should have the
     same ids in the Answer store
     """
@@ -155,7 +155,7 @@ def get_stored_pq_ids():
 
     return pids
 
-def remove_pq_vectors(store, documents: list[Document]) -> None:
+def remove_pq_vectors(store, documents: list[Document]) -> tuple[list[int], list[int]]:
     """Deletes the vectors in the passed vector store whose ids
     are contained in the supplied Documents.
     Returns a success status.
@@ -174,16 +174,24 @@ def remove_pq_vectors(store, documents: list[Document]) -> None:
             failure_ids.append(pid)
     return success_ids, failure_ids
 
+
 async def update_pqs():
-    print("Updating PQs")
-
+    """Updates any PQs which are answered but were previously unanswered.
+    Then retrieves and inserts any PQs not currently in the vector stores.
+    """
     update_answers()
-    retrieve_latest_pqs()
+    insert_new_pqs()
 
 
-def retrieve_latest_pqs():
+def insert_new_pqs():
+    """Uses the list of PQ ids not currently in the question store to retrieve
+    the missing questions, and to update the vector stores with those questions.
+    """
     missing_ids = get_missing_pq_ids()
     print(f"Count of missing PQs: {len(missing_ids)}")
+    if not missing_ids:
+        return
+
     questions, not_retrieved_ids = get_specific_question_details(missing_ids)
 
     # Any PQs not successfully retrieved should be picked up on the next run
@@ -194,19 +202,23 @@ def retrieve_latest_pqs():
 
 
 def update_answers():
+    """Reads the collection of PQ ids marked for checking. This is currently only used
+    to check for PQs that have no answer, but may have been answered since they were
+    inserted in the vector stores.
 
+    The PQs associated with these ids are retrieved, with any failed retrievals recorded
+    by having their ids recorded for subsequent attempts.
+    """
     ids = read_and_delete_csv_file(STATUS_FILE)
 
     if len(ids) > 0:
-        print("The following ids will be checked to discover whether they have been answered")
-        print(ids)
+        print(f"The following PQs will be checked for answers: \n{ids}")
     else:
         print("No statuses to check")
         return
 
     questions, not_retrieved_ids = get_specific_question_details(ids)
 
-    # compile the list of ids for further checking, starting with the ones that failed to retrieve
     if not_retrieved_ids:
         print(f"The following PQs requiring answers were not retrieved successfully: {not_retrieved_ids}")
 
@@ -214,16 +226,27 @@ def update_answers():
     update_stores(questions, not_retrieved_ids)
 
 
-def update_stores(questions, to_check_ids=None):
+def process_pqs(questions: list[dict]) -> list[int]:
+    """Any question not having an answer has its id recorded for later checking.
+    The answer field is populated with an empty html paragraph, as the answer_store
+    embedding requires a non-null string, and the general format of answers uses <p></p>
+    delimiters.
 
+    In order to simplify the text processing prior to embedding, we use a pandas
+    DataFrame.
+
+    LangChain Documents are created from the questions and inserted into the
+    Question and Answer vector stores.
+
+    The list of unanswered PQ ids is returned for persistence and subsequent checking.
+    """
     global question_store, answer_store
 
-    if not to_check_ids:
-        to_check_ids = []
+    not_answered_ids = []
 
     for question in questions:
         if not question["answerText"]:
-            to_check_ids.append(question["id"])
+            not_answered_ids.append(question["id"])
             # add an empty paragraph as a null answertext cannot be indexed
             question["answerText"] = "<p></p>"
 
@@ -248,6 +271,20 @@ def update_stores(questions, to_check_ids=None):
         answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:
         print(f"Failed to update stores with answer data : {e}")
+
+    return not_answered_ids
+
+
+def update_stores(questions, to_check_ids=None):
+    """Inserts the questions into the vector stores.
+    Updates the list of PQ ids to be checked and writes the list
+    to a file in S3.
+    """
+    if not to_check_ids:
+        to_check_ids = []
+    if questions:
+        not_answered_ids = process_pqs(questions)
+        to_check_ids.extend(not_answered_ids)
 
     write_ids_file(STATUS_FILE, to_check_ids)
 
@@ -464,43 +501,6 @@ async def add_pqs_file(filename: str):
         print(f"Failed to update stores with data from {target} : {e}")
 
     return
-
-"""
-async def add_documents(count: int, offset: int):
-
-    global question_store, answer_store
-
-    question_dir = "/" + TMP + QUESTION_STORE_DIR
-    answer_dir = "/" + TMP + ANSWER_STORE_DIR
-
-    s3_client = S3Client()
-
-    pq_ids = await get_pq_ids()
-    embed_model = OpenAIEmbeddings(
-                       model="text-embedding-3-small",
-                    )
-
-    # batches of 1 to avoid silly exclusions
-    for i in range(offset, count + offset):
-        print(f"Retrieving index {i}")
-        questions, not_retrieved_ids = get_specific_question_details([pq_ids[i]])
-        if questions:
-            try:
-                df = pd.DataFrame(questions)
-                df = populate_embeddable_questions(df)
-                df = populate_embeddable_answers(df)
-            except Exception as e:
-                print(f"Failed to set Dataframe for questions {questions} : {e}")
-
-
-            try:
-                question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
-                question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-                answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
-            except Exception as e:
-                print(f"Failed to update stores with {questions} : {e}")
-"""
-
 
 async def get_pq_ids():
     global pq_ids

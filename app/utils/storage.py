@@ -115,7 +115,8 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
 
 def get_missing_pq_ids():
     stored_ids = get_stored_pq_ids()
-
+    print(f"The stored PQs count: {len(stored_ids)}")
+    print(f"First few {stored_ids[:5]}")
     try:
         all_ids = get_all_question_ids(answering_body_id=13, house="Commons")
         print(f"Retrieved {len(all_ids)} PQs from parliament api")

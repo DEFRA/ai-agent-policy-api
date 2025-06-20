@@ -147,6 +147,7 @@ def get_stored_pq_ids():
         vector_store = load_store(s3_client, store_dir, embed_model)
 
         pids = list(vector_store.index_to_docstore_id.values())
+        print(pids[:5])
 
     except Exception as e:
         print(f"Failed to load vector store at {store_dir}: {e}")
@@ -180,15 +181,16 @@ async def update_pqs():
 
 
 def retrieve_latest_pqs():
-    missing_ids = get_missing_pq_ids()
-    print(f"The following ids are missing from the store: {missing_ids}")
-    questions, not_retrieved_ids = get_specific_question_details(missing_ids)
+#    missing_ids = get_missing_pq_ids()
+    get_missing_pq_ids()
+#    print(f"The following ids are missing from the store: {missing_ids}")
+#    questions, not_retrieved_ids = get_specific_question_details(missing_ids)
 
     # Any PQs not successfully retrieved should be picked up on the next run
-    if not_retrieved_ids:
-        print(f"The following PQs were not retrieved successfully: {not_retrieved_ids}")
+ #   if not_retrieved_ids:
+ #       print(f"The following PQs were not retrieved successfully: {not_retrieved_ids}")
 
-    update_stores(questions)
+#    update_stores(questions)
 
 
 def update_answers():

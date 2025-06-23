@@ -14,8 +14,6 @@ from app.langgraph_service import build_semantic_chat_graph
 from app.policy.router import router as policy_router
 from app.utils.storage import check_storage, update_pqs
 
-#from app.utils.timer_test import check_time
-
 logger = getLogger(__name__)
 
 scheduler = AsyncIOScheduler()
@@ -23,10 +21,6 @@ scheduler = AsyncIOScheduler()
 async def pq_update_job():
     await update_pqs()
 
-"""
-def timer_job():
-    check_time()
-"""
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -50,7 +44,7 @@ async def lifespan(_: FastAPI):
 
     scheduler.add_job(
         pq_update_job,
-        CronTrigger(hour=15, minute=15),
+        CronTrigger(hour=21), # 21.00 UTC each day
         id="pq_update",
         replace_existing=True
     )

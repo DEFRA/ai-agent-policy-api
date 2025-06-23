@@ -2,6 +2,8 @@ import os
 from contextlib import asynccontextmanager
 from logging import getLogger
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI
 
 from app.common.mongo import get_mongo_client
@@ -11,8 +13,16 @@ from app.health.router import router as health_router
 from app.langgraph_service import build_semantic_chat_graph
 from app.policy.router import router as policy_router
 from app.utils.storage import check_storage
+from app.utils.timer_test import check_time
 
 logger = getLogger(__name__)
+
+scheduler = AsyncIOScheduler()
+
+# Define your scheduled job
+def scheduled_job():
+    check_time()
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -34,12 +44,24 @@ async def lifespan(_: FastAPI):
     else:
         logger.error("No available Vector Stores")
 
+    scheduler.add_job(
+        scheduled_job,
+        CronTrigger(minute="*/15"), # Every 15 minutes
+        id="timer_test",
+        replace_existing=True
+    )
+
+    scheduler.start()
+    print("Scheduler started.")
     yield
     # Shutdown
 
     if client:
         await client.close()
         logger.info("MongoDB client closed")
+
+    scheduler.shutdown(wait=False)
+    print("Scheduler shut down.")
 
 
 app = FastAPI(lifespan=lifespan)

@@ -1,1 +1,1 @@
-30 17 * * * python /app/utils/daily_check.py >> /var/log/cron.log 2>&1
+30 * * * * python /app/utils/timer_test.py >> /var/log/cron.log 2>&1

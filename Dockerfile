@@ -24,6 +24,8 @@ WORKDIR /app
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
+RUN crontab crontab.txt
+
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
 ARG UID=10001
@@ -53,5 +55,4 @@ COPY . .
 # Expose the port that the application listens on.
 EXPOSE 8085
 
-RUN crontab crontab.txt
 CMD ["/start.sh"]

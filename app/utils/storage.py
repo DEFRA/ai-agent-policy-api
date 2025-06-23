@@ -175,6 +175,7 @@ def remove_pq_vectors(store, documents: list[Document]) -> tuple[list[int], list
     return success_ids, failure_ids
 
 
+
 async def update_pqs():
     """Updates any PQs which are answered but were previously unanswered.
     Then retrieves and inserts any PQs not currently in the vector stores.

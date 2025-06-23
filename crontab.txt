@@ -1,1 +1,0 @@
-30 * * * * python /app/utils/timer_test.py >> /var/log/cron.log 2>&1

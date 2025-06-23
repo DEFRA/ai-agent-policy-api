@@ -16,3 +16,4 @@ pymongo
 pymongo[aws,snappy,zstd,encryption]
 httpx
 uvicorn
+apscheduler

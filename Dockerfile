@@ -17,15 +17,9 @@ ENV UVICORN_PORT=8085
 
 # Add curl to template.
 # CDP PLATFORM HEALTHCHECK REQUIREMENT
-RUN apt-get update && apt-get install -y curl cron
+RUN apt-get update && apt-get install curl -y
 
 WORKDIR /app
-
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
-COPY crontab.txt .
-RUN crontab crontab.txt
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
@@ -56,4 +50,5 @@ COPY . .
 # Expose the port that the application listens on.
 EXPOSE 8085
 
-CMD ["/start.sh"]
+# Run the application.
+CMD ["uvicorn", "app.main:app", "--host=0.0.0.0", "--log-config", "logging.json"]

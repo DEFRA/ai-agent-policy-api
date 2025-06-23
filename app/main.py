@@ -49,7 +49,7 @@ async def lifespan(_: FastAPI):
 
     scheduler.add_job(
         pq_update_job,
-        CronTrigger(hour=14, minute=15), # 14.15 each day
+        CronTrigger(hour=14, minute=50), # 14.15 each day
         id="pq_update",
         replace_existing=True
     )

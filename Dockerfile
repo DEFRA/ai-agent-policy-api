@@ -24,6 +24,7 @@ WORKDIR /app
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
+COPY crontab.txt .
 RUN crontab crontab.txt
 
 # Create a non-privileged user that the app will run under.

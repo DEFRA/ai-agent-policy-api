@@ -181,7 +181,7 @@ async def update_pqs():
     Then retrieves and inserts any PQs not currently in the vector stores.
     """
     update_answers()
-#    insert_new_pqs()
+    insert_new_pqs()
 
 
 def insert_new_pqs():

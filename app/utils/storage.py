@@ -262,6 +262,7 @@ def process_pqs(questions: list[dict]) -> list[int]:
                     )
 
     # The necessary PQ transformations are simpler using pandas
+    print("QUESTIONS PRE TRANSFORMATION\n{questions}")
     df = pd.DataFrame(questions)
     df = populate_embeddable_questions(df)
 

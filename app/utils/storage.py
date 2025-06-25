@@ -268,12 +268,14 @@ def process_pqs(questions: list[dict]) -> list[int]:
     try:
         question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
 
-        question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-        answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+        question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+        answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:
-        print(f"Failed to update stores with answer data : {e}")
+        print(f"Failed to update stores with PQs : {e}")
 
-    return not_answered_ids
+    # assemble list of ids not added at some stage
+
+    return list(set(not_answered_ids).union(set(question_ids_not_added),set(answer_ids_not_added)))
 
 
 def update_stores(questions, to_check_ids=None):
@@ -284,8 +286,8 @@ def update_stores(questions, to_check_ids=None):
     if not to_check_ids:
         to_check_ids = []
     if questions:
-        not_answered_ids = process_pqs(questions)
-        to_check_ids.extend(not_answered_ids)
+        not_inserted_ids = process_pqs(questions)
+        to_check_ids.extend(not_inserted_ids)
 
     write_ids_file(STATUS_FILE, to_check_ids)
 
@@ -382,15 +384,23 @@ def create_vector_store(s3_client: S3Client,
 def update_vector_store(s3_client: S3Client,
                         documents: list[Document],
                         embed_model: OpenAIEmbeddings,
-                        store_dir: str) -> FAISS:
+                        store_dir: str) -> tuple[FAISS, list[int]]:
     """
     Add Documents to an existing FAISS vector store.
     The store is saved locally and then the index files
     are uploaded to S3.
 
     If the store dosn't exist, create it.
+
+    If the update fails, the ids of the PQs to be inserted are returned to
+    the caller, so that a retry using those PQs can be provisioned.
     """
     print(f"Updating store with {len(documents)} PQs")
+
+    # save these ids in case of update failure
+    ids_to_be_inserted = [doc.id for doc in documents]
+    added_ids = []
+
     vector_store = None
     exists = s3_client.check_object_existence(store_dir + "index.faiss")
 
@@ -408,10 +418,11 @@ def update_vector_store(s3_client: S3Client,
         print(f"Total number of documents prior to update: {num_documents}")
 
         # remove any that have already been inserted, as upsert is not available
+        # Note: where the PQ has not been inserted previously, the deletion will fail. This is unimportant.
         success_ids, failure_ids = remove_pq_vectors(vector_store, documents)
         print(f"These ids were successfully removed {success_ids}\nThese were not removed {failure_ids}")
 
-        vector_store.add_documents(documents=documents)
+        added_ids = vector_store.add_documents(documents=documents)
         # Save vector store
         vector_store.save_local(store_dir)
 
@@ -423,7 +434,14 @@ def update_vector_store(s3_client: S3Client,
     except Exception as e:
         print(f"Failed to update vector store at {store_dir}: {e}")
 
-    return vector_store
+    added_ints = [int(pid) for pid in added_ids]
+    ids_not_added = list(set(ids_to_be_inserted) - set(added_ints))
+    if ids_not_added:
+        print(f"The following ids remain to be added {ids_not_added}")
+    else:
+        print("All PQs were added successfully")
+
+    return vector_store, ids_not_added
 
 
 def load_store(s3_client: S3Client,
@@ -496,8 +514,8 @@ async def add_pqs_file(filename: str):
 
     try:
         question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
-        question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-        answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+        question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+        answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:
         print(f"Failed to update stores with data from {target} : {e}")
 
@@ -584,40 +602,6 @@ async def check_storage():
 
         question_store = load_store(s3_client, question_dir, embed_model)
         answer_store = load_store(s3_client, answer_dir, embed_model)
-
-    return question_store, answer_store
-
-
-async def store_documents(s3_client, embed_model, question_dir, answer_dir):
-
-    global question_store, answer_store
-
-    print("Retrieving documents for storage")
-
-    pq_ids = await get_pq_ids()
-    if len(pq_ids) > 0:
-        print(f"First PQ id {pq_ids[0]}")
-
-    questions, not_retrieved_ids = get_specific_question_details(pq_ids)
-
-    # use Pandas for text manipulation
-    if questions:
-        try:
-            df = pd.DataFrame(questions)
-            df = populate_embeddable_questions(df)
-        except Exception as e:
-            print(f"Failed to set Dataframe for questions {questions}:\n{e}")
-            return None
-
-    try:
-        question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
-        if failed_ids:
-            print(f"The following policy ids were not stored:\n{failed_ids}")
-
-        question_store = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-        answer_store = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
-    except Exception as e:
-        print(f"Failed to update stores {e}")
 
     return question_store, answer_store
 

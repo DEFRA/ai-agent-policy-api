@@ -243,6 +243,11 @@ def process_pqs(questions: list[dict]) -> list[int]:
     """
     global question_store, answer_store
 
+    pq_count = len(questions)
+    print(f"In process_pqs with {pq_count} questions")
+    if pq_count == 0:
+        return []
+
     not_answered_ids = []
 
     for question in questions:

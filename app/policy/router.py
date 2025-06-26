@@ -12,8 +12,8 @@ from app.common.mongo import get_db
 # LangGraph imports
 from app.langgraph_service import get_semantic_graph, run_semantic_chat
 from app.utils.storage import (
-    add_pqs_file,
     get_answer_match,
+    get_pq_stats,
     get_question_match,
     read_output,
     store_output,
@@ -254,24 +254,18 @@ async def semantic_chat(request: SemanticChatRequest):
             detail=f"Error in semantic chat workflow: {e}"
         ) from e
 
-
-@router.get("/upload")
-async def upload_questions(
-    background_tasks: BackgroundTasks,
-    pq_file: str = Query(..., description="The name of the file in S3 containing the PQs to insert into the stores")
-    ):
-    """Adds PQs from the named file."""
-
-    background_tasks.add_task(add_pqs_file, pq_file)
-    return {"message":f"Uploading PQs from {pq_file}" }
-
-
-@router.get("/status")
+@router.get("/update")
 async def answer_status(background_tasks: BackgroundTasks):
     """Retrieves PQs from the status file."""
 
     background_tasks.add_task(update_pqs)
     return {"message":"Retrieving PQs from status file" }
+
+@router.get("/stats")
+async def show_stats():
+    """Retrieves count of stored PQs and ids to be checked."""
+    stats = await get_pq_stats()
+    return {"PQ stats":stats}
 
 @router.get("/db")
 async def db_query(db=Depends(get_db)):

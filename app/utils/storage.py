@@ -1,7 +1,6 @@
 import csv
 import json
 import os
-import stat
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -116,16 +115,20 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
 def get_missing_pq_ids() -> list[int]:
     stored_ids = get_stored_pq_ids()
     print(f"The stored PQs count: {len(stored_ids)}")
-    print(f"First few {stored_ids[:5]}")
+
     try:
         all_ids = get_all_question_ids(answering_body_id=13, house="Commons")
         print(f"Retrieved {len(all_ids)} PQs from parliament api")
-        print(f"First few from Parliament: {all_ids[:5]}")
     except Exception as e:
         print(f"Error retrieving ids {e}")
         return []
 
-    return list(set(all_ids) - set(stored_ids))
+    all_set = set(all_ids)
+    stored_set = set(stored_ids)
+
+    # Worth checking if the store now has ids not being returned from Gov API
+    print(f"Extra ids: \n {stored_set - all_set}")
+    return list(all_set - stored_set)
 
 def get_stored_pq_ids() -> list[int]:
     """Retrieves the PQ ids from the Question store - we should have the
@@ -210,7 +213,7 @@ def update_answers():
     The PQs associated with these ids are retrieved, with any failed retrievals recorded
     by having their ids recorded for subsequent attempts.
     """
-    ids = read_and_delete_csv_file(STATUS_FILE)
+    ids = read_status_file(STATUS_FILE, delete=True)
 
     if len(ids) > 0:
         print(f"The following PQs will be checked for answers: \n{ids}")
@@ -262,7 +265,7 @@ def process_pqs(questions: list[dict]) -> list[int]:
                     )
 
     # The necessary PQ transformations are simpler using pandas
-    print("QUESTIONS PRE TRANSFORMATION\n{questions}")
+    print(f"QUESTIONS PRE TRANSFORMATION\n{questions}")
     df = pd.DataFrame(questions)
     df = populate_embeddable_questions(df)
 
@@ -284,6 +287,13 @@ def process_pqs(questions: list[dict]) -> list[int]:
     return list(set(not_answered_ids).union(set(question_ids_not_added),set(answer_ids_not_added)))
 
 
+
+async def get_pq_stats():
+    to_check_count = len(read_status_file(STATUS_FILE, delete=False))
+    stored_count = len(get_stored_pq_ids())
+    return {"stored_pq_count": stored_count,
+            "further_check_count": to_check_count}
+
 def update_stores(questions, to_check_ids=None):
     """Inserts the questions into the vector stores.
     Updates the list of PQ ids to be checked and writes the list
@@ -298,7 +308,7 @@ def update_stores(questions, to_check_ids=None):
     write_ids_file(STATUS_FILE, to_check_ids)
 
 
-def read_and_delete_csv_file(filename: str) -> list[str]:
+def read_status_file(filename: str, delete: bool = False) -> list[str]:
     """Downloads the named file from S3, and returns the
     contents as a list of strings.
     The file is deleted to avoid accidental reuse.
@@ -330,13 +340,12 @@ def read_and_delete_csv_file(filename: str) -> list[str]:
         except Exception as e:
             print(f"Error downloading/reading {file} from S3: {e}")
 
-        try:
-            fstat = stat.filemode(os.stat(file).st_mode)
-            print(f"Status of file {file}: {fstat}")
-            # now remove the file
-            os.remove(file)
-        except Exception as e:
-            print(f"Error deleting {file}: {e}")
+        if delete:
+            try:
+                # now remove the file
+                os.remove(file)
+            except Exception as e:
+                print(f"Error deleting {file}: {e}")
 
     return lines
 

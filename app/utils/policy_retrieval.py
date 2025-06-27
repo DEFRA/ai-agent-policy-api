@@ -39,7 +39,6 @@ def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons
         params["tabledWhenFrom"] = tabled_from
 
     try:
-        print(f"Fetching ids with skip {skip}")
         response = requests.get(
             endpoint,
             headers={"Accept": "application/json",
@@ -62,7 +61,7 @@ def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons
         ]
 
     except Exception as e:
-        print(f"Error fetching data: {e}")
+        logger.error("Error fetching data: %s", e)
         return []
 
 
@@ -80,7 +79,6 @@ def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=5_0
     skip = 0
 
     while True:
-        print(f"Fetching batch of {batch_size} records, skipping {skip}...")
         batch_ids = get_question_ids(
             answering_body_id=answering_body_id,
             skip=skip,
@@ -93,14 +91,13 @@ def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=5_0
             break
 
         all_ids.extend(batch_ids)
-        print(f"Retrieved {len(batch_ids)} IDs in this batch")
 
         if len(batch_ids) < batch_size:  # If we got fewer results than requested, we've reached the end
             break
 
         skip += batch_size
 
-    print(f"Total IDs retrieved: {len(all_ids)}")
+    logger.info("Total IDs retrieved: %n", len(all_ids))
     return all_ids
 
 
@@ -123,7 +120,6 @@ def get_question_details(question_id: str) -> dict[str, Any]:
     endpoint = f"{base_url}/writtenquestions/questions/{question_id}"
 
     try:
-        print(f"Retrieve PQ {question_id=}")
         response = requests.get(
             endpoint,
             headers={"Accept": "application/json",
@@ -132,10 +128,9 @@ def get_question_details(question_id: str) -> dict[str, Any]:
             proxies=proxies
         )
         response.raise_for_status()
-        print(f"SUCCESSFUL Retrieval of PQ {question_id=}")
         return response.json()
     except Exception as e:
-        print(f"Error fetching {question_id=}: {e}")
+        logger.error("Error fetching %s: %s", question_id, e)
         return {}
 
 
@@ -150,8 +145,8 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
         pd.DataFrame: DataFrame containing all question details
     """
     # Get all question IDs
-    print("Fetching all questions with the following constraints:")
-    print(f"Params {answering_body_id}, {house}, {tabled_from}")
+    logger.info("Fetching all questions with the following constraints:")
+    logger.info("Params answering_body_id: %s, \nhouse: %s, tabled_from: %s", answering_body_id, house, tabled_from)
     all_ids = get_all_question_ids(
         answering_body_id=answering_body_id, house=house, tabled_from=tabled_from)
 
@@ -161,11 +156,7 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
     error_count = 0
 
     # Process each ID
-    for i, question_id in enumerate(all_ids, 1):
-        # Only print progress every 250 questions
-        if i % 250 == 0 or i == 1:
-            print(
-                f"Retrieving question {i}/{len(all_ids)} (ID: {question_id})")
+    for _i, question_id in enumerate(all_ids, 1):
 
         # Get question details
         question_data = get_question_details(question_id)
@@ -175,8 +166,7 @@ def get_all_question_details(answering_body_id: int = None, house: str = "Common
             if "value" in question_data:
                 all_questions.append(question_data["value"])
             else:
-                print(
-                    f"Warning: No 'value' field found for question {question_id}")
+                logger.warning("Warning: No 'value' field found for question %s", question_id)
         else:
             error_count += 1
 
@@ -201,12 +191,7 @@ def get_specific_question_details(pq_ids):
     failed_ids = []
 
     # Process each ID
-    for i, question_id in enumerate(pq_ids, 1):
-        # Only print progress every 250 questions
-        if i % 250 == 0 or i == 1:
-            print(
-                f"Processing question {i}/{len(pq_ids)} (ID: {question_id})")
-
+    for _i, question_id in enumerate(pq_ids, 1):
         # Get question details
         question_data = get_question_details(question_id)
 
@@ -215,14 +200,13 @@ def get_specific_question_details(pq_ids):
             if "value" in question_data:
                 all_questions.append(question_data["value"])
             else:
-                print(
-                    f"Warning: No 'value' field found for question {question_id}")
+                logger.warning("Warning: No 'value' field found for question %s", question_id)
         else:
             failed_ids.append(question_id)
 
         # Add a small delay to avoid overwhelming the API
         time.sleep(0.2)  # 200ms delay between requests
 
-    print(f"Failed ids: {failed_ids}")
+    logger.info("Failed ids: %s", failed_ids)
 
     return all_questions, failed_ids

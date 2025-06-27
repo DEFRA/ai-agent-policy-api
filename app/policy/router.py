@@ -113,7 +113,7 @@ async def semantic_chat_background(request: SemanticChatRequest,
         generated result.
     """
 
-    tag = time.strftime("%H%M%S", time.localtime())
+    tag = time.strftime("%Y%d%m_%H%M%S_%f", time.localtime())
 
     background_tasks.add_task(semantic_pipeline, request, tag)
     return {"message":f"{tag}" }

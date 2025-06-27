@@ -336,7 +336,7 @@ def read_status_file(filename: str, delete: bool = False) -> list[str]:
                     lines.append(row[0])
             logger.info("Read %n items from file.", len(lines) )
         except Exception as e:
-            logger.error("Error downloading/reading {file} from S3: %s", e)
+            logger.error("Error downloading/reading %s from S3: %s", file, e)
 
         if delete:
             try:

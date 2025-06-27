@@ -138,10 +138,10 @@ def semantic_pipeline(request: SemanticChatRequest, tag: str):
         raise HTTPException(
                 status_code=500, detail="LangGraph workflow not initialized")
     try:
-
+        logger.info("Running semantic graph for question %s with tag %s", request.question, tag)
         # Execute LangGraph workflow
         result = run_semantic_chat(semantic_chat_graph, request.question)
-
+        logger.info("Result of graph run %s", result)
         # Get the JSON output from the LLM
         json_output_string = result.get("json_output", "")
 

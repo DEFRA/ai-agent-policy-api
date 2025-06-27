@@ -606,7 +606,7 @@ async def check_storage():
 
     if not exists:
         logger.error("Vector stores not located")
-
+    else:
         question_store = load_store(s3_client, question_dir, embed_model)
         answer_store = load_store(s3_client, answer_dir, embed_model)
 

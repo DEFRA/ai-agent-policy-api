@@ -112,7 +112,9 @@ async def semantic_chat_background(request: SemanticChatRequest,
         A dictionary containing the time-based tag for use in querying the
         generated result.
     """
-    tag =  datetime.now(timezone.utc).strftime("%Y%d%m_%H%M%S_%f")
+    # revert to HHMMSS format to test
+    tag =  datetime.now(timezone.utc).strftime("%H%M%S")
+#    tag =  datetime.now(timezone.utc).strftime("%Y%d%m_%H%M%S_%f")
     background_tasks.add_task(semantic_pipeline, request, tag)
     return {"message":f"{tag}" }
 
@@ -138,10 +140,10 @@ def semantic_pipeline(request: SemanticChatRequest, tag: str):
         raise HTTPException(
                 status_code=500, detail="LangGraph workflow not initialized")
     try:
-
+        logger.info("Running semantic graph for question %s with tag %s", request.question, tag)
         # Execute LangGraph workflow
         result = run_semantic_chat(semantic_chat_graph, request.question)
-
+        logger.info("Result of graph run %s", result)
         # Get the JSON output from the LLM
         json_output_string = result.get("json_output", "")
 

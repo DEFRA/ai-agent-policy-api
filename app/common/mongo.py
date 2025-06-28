@@ -46,3 +46,14 @@ async def check_connection(client: AsyncMongoClient):
     database = await get_db(client)
     response = await database.command("ping")
     logger.info("MongoDB PING %s", response)
+
+
+
+async def add_item(item: dict, tag: str, collection_name: str = "semantic_output"):
+    collection = db[collection_name]
+
+    to_store = {"_id": tag, "content": item}
+
+    stored_item = (await collection.insert_one(to_store))
+    stored_id = stored_item.inserted_id
+    logger.info("Stored item %s", stored_id)

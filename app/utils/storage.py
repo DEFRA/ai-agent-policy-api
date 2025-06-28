@@ -330,7 +330,7 @@ def read_status_file(filename: str, delete: bool = False) -> list[str]:
         try:
             s3_client.download_file(file, file)
 
-            with open(file) as csvfile:
+            with open(file,encoding="utf-8") as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
                     lines.append(row[0])

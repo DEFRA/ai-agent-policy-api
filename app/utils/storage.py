@@ -423,7 +423,7 @@ def update_vector_store(s3_client: S3Client,
         vector_store = create_vector_store(s3_client, documents, embed_model, store_dir)
         logger.info("Created %s", vector_store)
 
-        return vector_store
+        return vector_store, ids_to_be_inserted
 
     try:
         vector_store = load_store(s3_client, store_dir, embed_model)

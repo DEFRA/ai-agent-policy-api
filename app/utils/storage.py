@@ -114,11 +114,11 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
 
 def get_missing_pq_ids() -> list[int]:
     stored_ids = get_stored_pq_ids()
-    logger.info("The stored PQs count: %n", len(stored_ids))
+    logger.info("The stored PQs count: %s", len(stored_ids))
 
     try:
         all_ids = get_all_question_ids(answering_body_id=13, house="Commons")
-        logger.info("Retrieved %n PQs from parliament api", len(all_ids))
+        logger.info("Retrieved %s PQs from parliament api", len(all_ids))
     except Exception as e:
         logger.error("Error retrieving ids: %s", e)
         return []
@@ -192,7 +192,7 @@ def insert_new_pqs():
     the missing questions, and to update the vector stores with those questions.
     """
     missing_ids = get_missing_pq_ids()
-    logger.info("Count of missing PQs: %n", len(missing_ids))
+    logger.info("Count of missing PQs: %s", len(missing_ids))
     if not missing_ids:
         return
 
@@ -342,7 +342,7 @@ def read_status_file(filename: str, delete: bool = False) -> list[str]:
                 reader = csv.reader(csvfile)
                 for row in reader:
                     lines.append(row[0])
-            logger.info("Read %n items from file.", len(lines) )
+            logger.info("Read %s items from file.", len(lines) )
         except Exception as e:
             logger.error("Error downloading/reading %s from S3: %s", file, e)
 
@@ -416,7 +416,7 @@ def update_vector_store(s3_client: S3Client,
     If the update fails, the ids of the PQs to be inserted are returned to
     the caller, so that a retry using those PQs can be provisioned.
     """
-    logger.info("Updating store with %n PQs", len(documents))
+    logger.info("Updating store with %s PQs", len(documents))
 
     # save these ids in case of update failure
     ids_to_be_inserted = [doc.id for doc in documents]
@@ -436,7 +436,7 @@ def update_vector_store(s3_client: S3Client,
     try:
         vector_store = load_store(s3_client, store_dir, embed_model)
         num_documents = len(vector_store.index_to_docstore_id)
-        logger.info("Total number of documents prior to update: %n", num_documents)
+        logger.info("Total number of documents prior to update: %s", num_documents)
 
         # remove any that have already been inserted, as upsert is not available
         # Note: where the PQ has not been inserted previously, the deletion will fail. This is unimportant.
@@ -448,7 +448,7 @@ def update_vector_store(s3_client: S3Client,
         vector_store.save_local(store_dir)
 
         num_documents = len(vector_store.index_to_docstore_id)
-        logger.info("Total number of documents post update: %n", num_documents)
+        logger.info("Total number of documents post update: %s", num_documents)
 
         s3_client.upload_file(store_dir + "index.faiss")
         s3_client.upload_file(store_dir + "index.pkl")
@@ -557,7 +557,7 @@ async def get_pq_ids():
         logger.info("Retrieving ids")
         try:
             pq_ids = get_all_question_ids(answering_body_id=13, house="Commons")
-            logger.info("Retrieved %n PQs from parliament api", len(pq_ids))
+            logger.info("Retrieved %s PQs from parliament api", len(pq_ids))
         except Exception as e:
             logger.error("Error retrieving ids: %s", e)
 
@@ -587,7 +587,7 @@ async def get_pq_ids():
                 reader = csv.reader(csvfile)
                 for row in reader:
                     pq_ids.append(int(row[0]))
-            logger.info("Read %n PQ ids from file %s.", len(pq_ids), pq_ids_file)
+            logger.info("Read %s PQ ids from file %s.", len(pq_ids), pq_ids_file)
         except Exception as e:
             logger.error("Error downloading/reading %s from S3: %s", pq_ids_file, e)
 
@@ -685,7 +685,7 @@ async def load_status():
     if len(ids) > 0:
         logger.info("The following PQs will be stored: \n%s", ids)
         db_status = {"check":ids}
-        add_item(db_status, "to_check", "maintenance")
+        await add_item(db_status, "to_check", "maintenance")
     else:
         logger.info("No statuses to check")
         return

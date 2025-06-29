@@ -12,6 +12,7 @@ from langchain.vectorstores.utils import DistanceStrategy
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
+from app.common.mongo import add_item
 from app.common.s3 import S3Client
 
 from .policy_retrieval import (
@@ -285,7 +286,7 @@ def process_pqs(questions: list[dict]) -> list[int]:
             question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
             answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
         except Exception as e:
-            logger.error("Failed to update stores with PQs \n%s:\n %s",question.id,e)
+            logger.error("Failed to update stores with PQs \n%s:\n %s",question["id"],e)
 
     # assemble list of ids not added at some stage
 
@@ -678,3 +679,13 @@ def read_output(filename):
 
     return result
 
+async def load_status():
+    ids = read_status_file(STATUS_FILE, delete=False)
+
+    if len(ids) > 0:
+        logger.info("The following PQs will be stored: \n%s", ids)
+        db_status = {"check":ids}
+        add_item(db_status, "to_check", "maintenance")
+    else:
+        logger.info("No statuses to check")
+        return

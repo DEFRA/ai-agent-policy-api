@@ -12,7 +12,7 @@ from langchain.vectorstores.utils import DistanceStrategy
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from app.common.mongo import add_item
+from app.common.mongo import add_item, delete_item, get_item
 from app.common.s3 import S3Client
 
 from .policy_retrieval import (
@@ -183,11 +183,11 @@ async def update_pqs():
     """Updates any PQs which are answered but were previously unanswered.
     Then retrieves and inserts any PQs not currently in the vector stores.
     """
-    update_answers()
-    insert_new_pqs()
+    await update_answers()
+    await insert_new_pqs()
 
 
-def insert_new_pqs():
+async def insert_new_pqs():
     """Uses the list of PQ ids not currently in the question store to retrieve
     the missing questions, and to update the vector stores with those questions.
     """
@@ -202,10 +202,10 @@ def insert_new_pqs():
     if not_retrieved_ids:
         logger.error("The following PQs were not retrieved successfully: %s", not_retrieved_ids)
 
-    update_stores(questions)
+    await update_stores(questions)
 
 
-def update_answers():
+async def update_answers():
     """Reads the collection of PQ ids marked for checking. This is currently only used
     to check for PQs that have no answer, but may have been answered since they were
     inserted in the vector stores.
@@ -213,7 +213,8 @@ def update_answers():
     The PQs associated with these ids are retrieved, with any failed retrievals recorded
     by having their ids recorded for subsequent attempts.
     """
-    ids = read_status_file(STATUS_FILE, delete=True)
+#    ids = read_status_file(STATUS_FILE, delete=True)
+    ids = await read_status_data()
 
     if len(ids) > 0:
         logger.info("The following PQs will be checked for answers: \n%s", ids)
@@ -227,7 +228,7 @@ def update_answers():
         logger.error("The following PQs requiring answers were not retrieved successfully: %s", not_retrieved_ids)
 
     # now update the PQs that do have answers while storing the ids that still don't
-    update_stores(questions, not_retrieved_ids)
+    await update_stores(questions, not_retrieved_ids)
 
 
 def process_pqs(questions: list[dict]) -> list[int]:
@@ -300,7 +301,7 @@ async def get_pq_stats():
     return {"stored_pq_count": stored_count,
             "further_check_count": to_check_count}
 
-def update_stores(questions, to_check_ids=None):
+async def update_stores(questions, to_check_ids=None):
     """Inserts the questions into the vector stores.
     Updates the list of PQ ids to be checked and writes the list
     to a file in S3.
@@ -311,8 +312,25 @@ def update_stores(questions, to_check_ids=None):
         not_inserted_ids = process_pqs(questions)
         to_check_ids.extend(not_inserted_ids)
 
-    write_ids_file(STATUS_FILE, to_check_ids)
+#    write_ids_file(STATUS_FILE, to_check_ids)
+    logger.info("The following PQs will be stored in mongo: \n%s", to_check_ids)
+    db_status = {"check":to_check_ids}
+    await add_item(db_status, "to_check", "maintenance")
 
+
+async def read_status_data() -> list[str]:
+    """Read the saved ids from the status item in mongo
+    The item is deleted to avoid accidental reuse.
+    """
+    ids = []
+
+    try:
+        status_item = await get_item("to_check", "maintenance")
+        logger.info(await delete_item("to_check", "maintenance"))
+        ids = status_item["check"]
+    except Exception as e:
+        logger.error("Failed to manage the mongo status item",e)
+    return ids
 
 def read_status_file(filename: str, delete: bool = False) -> list[str]:
     """Downloads the named file from S3, and returns the

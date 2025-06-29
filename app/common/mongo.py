@@ -57,3 +57,14 @@ async def add_item(item: dict, tag: str, collection_name: str = "semantic_output
     stored_item = (await collection.insert_one(to_store))
     stored_id = stored_item.inserted_id
     logger.info("Stored item %s", stored_id)
+
+
+async def get_item(tag: str, collection_name: str = "semantic_output") -> dict:
+    collection = db[collection_name]
+
+    return await collection.find_one({"_id": tag})
+
+async def delete_item(tag: str, collection_name: str = "semantic_output") -> dict:
+    collection = db[collection_name]
+
+    return await collection.delete_one({"_id": tag})

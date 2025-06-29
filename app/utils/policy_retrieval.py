@@ -119,6 +119,8 @@ def get_question_details(question_id: str) -> dict[str, Any]:
     base_url = "https://questions-statements-api.parliament.uk/api"
     endpoint = f"{base_url}/writtenquestions/questions/{question_id}"
 
+    logger.info("Getting question id %s", question_id)
+
     try:
         response = requests.get(
             endpoint,
@@ -128,6 +130,7 @@ def get_question_details(question_id: str) -> dict[str, Any]:
             proxies=proxies
         )
         response.raise_for_status()
+        logger.info("Retrieved %s",response)
         return response.json()
     except Exception as e:
         logger.error("Error fetching %s: %s", question_id, e)

@@ -15,6 +15,7 @@ from app.utils.storage import (
     get_answer_match,
     get_pq_stats,
     get_question_match,
+    load_status,
     read_output,
     store_output,
     update_pqs,
@@ -138,10 +139,10 @@ def semantic_pipeline(request: SemanticChatRequest, tag: str):
         raise HTTPException(
                 status_code=500, detail="LangGraph workflow not initialized")
     try:
-        logger.info("Running semantic graph for question %s with tag %s", request.question, tag)
+
         # Execute LangGraph workflow
         result = run_semantic_chat(semantic_chat_graph, request.question)
-        logger.info("Result of graph run %s", result)
+
         # Get the JSON output from the LLM
         json_output_string = result.get("json_output", "")
 
@@ -264,6 +265,12 @@ async def show_stats():
     """Retrieves count of stored PQs and ids to be checked."""
     stats = await get_pq_stats()
     return {"PQ stats":stats}
+
+@router.get("/store_status")
+async def store_status():
+    """Retrieves ids from status file and inserts into mongo."""
+    result = await load_status()
+    return {"load_status":result}
 
 @router.get("/db")
 async def db_query(db=Depends(get_db)):

@@ -12,7 +12,7 @@ from langchain.vectorstores.utils import DistanceStrategy
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from app.common.mongo import add_item
+from app.common.mongo import add_item, delete_item, get_item
 from app.common.s3 import S3Client
 
 from .policy_retrieval import (
@@ -213,7 +213,8 @@ def update_answers():
     The PQs associated with these ids are retrieved, with any failed retrievals recorded
     by having their ids recorded for subsequent attempts.
     """
-    ids = read_status_file(STATUS_FILE, delete=True)
+#    ids = read_status_file(STATUS_FILE, delete=True)
+    ids = read_status_data()
 
     if len(ids) > 0:
         logger.info("The following PQs will be checked for answers: \n%s", ids)
@@ -311,8 +312,25 @@ def update_stores(questions, to_check_ids=None):
         not_inserted_ids = process_pqs(questions)
         to_check_ids.extend(not_inserted_ids)
 
-    write_ids_file(STATUS_FILE, to_check_ids)
+#    write_ids_file(STATUS_FILE, to_check_ids)
+    logger.info("The following PQs will be stored in mongo: \n%s", to_check_ids)
+    db_status = {"check":to_check_ids}
+    await add_item(db_status, "to_check", "maintenance")
 
+
+def read_status_data() -> list[str]:
+    """Read the saved ids from the status item in mongo
+    The item is deleted to avoid accidental reuse.
+    """
+    ids = []
+
+    try:
+        status_item = await get_item("to_check", "maintenance")
+        logger.info(await delete_item("to_check", "maintenance"))
+        ids = status_item["check"]
+    except Exception as e:
+        logger.error("Failed to manage the mongo status item",e)
+    return ids
 
 def read_status_file(filename: str, delete: bool = False) -> list[str]:
     """Downloads the named file from S3, and returns the

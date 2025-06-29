@@ -12,7 +12,7 @@ from langchain.vectorstores.utils import DistanceStrategy
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from app.common.mongo import add_item, get_item
+from app.common.mongo import add_item, delete_item, get_item
 from app.common.s3 import S3Client
 
 from .policy_retrieval import (
@@ -315,6 +315,7 @@ async def update_stores(questions, to_check_ids=None):
         to_check_ids.extend(not_inserted_ids)
 
 #    write_ids_file(STATUS_FILE, to_check_ids)
+    await delete_item("to_check", "maintenance")
     logger.info("The following PQs will be stored in mongo: \n%s", to_check_ids)
     db_status = {"check":to_check_ids}
     await add_item(db_status, "to_check", "maintenance")

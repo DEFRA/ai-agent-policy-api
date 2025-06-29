@@ -214,7 +214,7 @@ async def update_answers():
     by having their ids recorded for subsequent attempts.
     """
 #    ids = read_status_file(STATUS_FILE, delete=True)
-    ids = read_status_data()
+    ids = await read_status_data()
 
     if len(ids) > 0:
         logger.info("The following PQs will be checked for answers: \n%s", ids)
@@ -318,7 +318,7 @@ async def update_stores(questions, to_check_ids=None):
     await add_item(db_status, "to_check", "maintenance")
 
 
-def read_status_data() -> list[str]:
+async def read_status_data() -> list[str]:
     """Read the saved ids from the status item in mongo
     The item is deleted to avoid accidental reuse.
     """

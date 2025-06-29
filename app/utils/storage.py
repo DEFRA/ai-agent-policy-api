@@ -250,39 +250,46 @@ def process_pqs(questions: list[dict]) -> list[int]:
     if pq_count == 0:
         return []
 
-    not_answered_ids = []
-
-    for question in questions:
-        if not question["answerText"]:
-            not_answered_ids.append(question["id"])
-            # add an empty paragraph as a null answertext cannot be indexed
-            question["answerText"] = "<p></p>"
+    revisit_ids = []
 
     s3_client = S3Client()
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                     )
-    try:
-        # The necessary PQ transformations are simpler using pandas
 
-        df = pd.DataFrame(questions)
-        df = populate_embeddable_questions(df)
+    question_dir = "/" + TMP + QUESTION_STORE_DIR
+    answer_dir = "/" + TMP + ANSWER_STORE_DIR
 
-        # quick hack to overcome the ruff dislike of explicitly using /tmp
+    for question in questions:
+        if not question["answerText"]:
+            revisit_ids.append(question["id"])
+            # add an empty paragraph as a null answertext cannot be indexed
+            question["answerText"] = "<p></p>"
 
-        question_dir = "/" + TMP + QUESTION_STORE_DIR
-        answer_dir = "/" + TMP + ANSWER_STORE_DIR
+    # for testing, one at a time!
+    for question in questions:
+        try:
+            # The necessary PQ transformations are simpler using pandas
 
-        question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
+#            df = pd.DataFrame(questions)
+            df = pd.DataFrame([question])
+            df = populate_embeddable_questions(df)
 
-        question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-        answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
-    except Exception as e:
-        logger.error("Failed to update stores with PQs \n%s:\n %s",questions,e)
+            # quick hack to overcome the ruff dislike of explicitly using /tmp
+
+            question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
+
+            # if some PQs have failed the document creation, they're stored for later
+            revisit_ids.extend(failed_ids)
+
+            question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+            answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+        except Exception as e:
+            logger.error("Failed to update stores with PQs \n%s:\n %s",question.id,e)
 
     # assemble list of ids not added at some stage
 
-    return list(set(not_answered_ids).union(set(question_ids_not_added),set(answer_ids_not_added)))
+    return list(set(revisit_ids).union(set(question_ids_not_added),set(answer_ids_not_added)))
 
 
 

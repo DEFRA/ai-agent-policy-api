@@ -270,27 +270,23 @@ def process_pqs(questions: list[dict]) -> list[int]:
             revisit_ids.append(question["id"])
             # add an empty paragraph as a null answertext cannot be indexed
             question["answerText"] = "<p></p>"
+        else:
+            logger.info("PQ %s has an answer",question["id"])
+    try:
+        # The necessary PQ transformations are simpler using pandas
 
-    # for testing, one at a time!
-    for question in questions:
-        try:
-            # The necessary PQ transformations are simpler using pandas
+        df = pd.DataFrame(questions)
+        df = populate_embeddable_questions(df)
 
-#            df = pd.DataFrame(questions)
-            df = pd.DataFrame([question])
-            df = populate_embeddable_questions(df)
+        question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
 
-            # quick hack to overcome the ruff dislike of explicitly using /tmp
+        # if some PQs have failed the document creation, they're stored for later
+        revisit_ids.extend(failed_ids)
 
-            question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
-
-            # if some PQs have failed the document creation, they're stored for later
-            revisit_ids.extend(failed_ids)
-
-            question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-            answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
-        except Exception as e:
-            logger.error("Failed to update stores with PQs \n%s:\n %s",question["id"],e)
+        question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+        answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+    except Exception as e:
+        logger.error("Failed to update stores with PQs \n%s:\n %s",success_ids,e)
 
     # assemble list of ids not added at some stage
 

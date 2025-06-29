@@ -183,11 +183,11 @@ async def update_pqs():
     """Updates any PQs which are answered but were previously unanswered.
     Then retrieves and inserts any PQs not currently in the vector stores.
     """
-    update_answers()
-    insert_new_pqs()
+    await update_answers()
+    await insert_new_pqs()
 
 
-def insert_new_pqs():
+async def insert_new_pqs():
     """Uses the list of PQ ids not currently in the question store to retrieve
     the missing questions, and to update the vector stores with those questions.
     """
@@ -202,10 +202,10 @@ def insert_new_pqs():
     if not_retrieved_ids:
         logger.error("The following PQs were not retrieved successfully: %s", not_retrieved_ids)
 
-    update_stores(questions)
+    await update_stores(questions)
 
 
-def update_answers():
+async def update_answers():
     """Reads the collection of PQ ids marked for checking. This is currently only used
     to check for PQs that have no answer, but may have been answered since they were
     inserted in the vector stores.
@@ -228,7 +228,7 @@ def update_answers():
         logger.error("The following PQs requiring answers were not retrieved successfully: %s", not_retrieved_ids)
 
     # now update the PQs that do have answers while storing the ids that still don't
-    update_stores(questions, not_retrieved_ids)
+    await update_stores(questions, not_retrieved_ids)
 
 
 def process_pqs(questions: list[dict]) -> list[int]:
@@ -301,7 +301,7 @@ async def get_pq_stats():
     return {"stored_pq_count": stored_count,
             "further_check_count": to_check_count}
 
-def update_stores(questions, to_check_ids=None):
+async def update_stores(questions, to_check_ids=None):
     """Inserts the questions into the vector stores.
     Updates the list of PQ ids to be checked and writes the list
     to a file in S3.

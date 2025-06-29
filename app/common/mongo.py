@@ -54,8 +54,7 @@ async def add_item(item: dict, tag: str, collection_name: str = "semantic_output
 
     to_store = {"_id": tag, "content": item}
 
-    # use update_one rather than insert_one to support upserts
-    stored_item = (await collection.update_one(to_store))
+    stored_item = (await collection.insert_one(to_store))
     stored_id = stored_item.inserted_id
     logger.info("Stored item %s", stored_id)
 

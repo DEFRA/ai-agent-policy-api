@@ -12,7 +12,7 @@ from langchain.vectorstores.utils import DistanceStrategy
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from app.common.mongo import add_item, delete_item, get_item
+from app.common.mongo import add_item, get_item
 from app.common.s3 import S3Client
 
 from .policy_retrieval import (
@@ -319,15 +319,14 @@ async def update_stores(questions, to_check_ids=None):
 
 
 async def read_status_data() -> list[str]:
-    """Read the saved ids from the status item in mongo
-    The item is deleted to avoid accidental reuse.
-    """
+    """Read the saved ids from the status item in mongo."""
     ids = []
 
     try:
         status_item = await get_item("to_check", "maintenance")
-        logger.info(await delete_item("to_check", "maintenance"))
-        ids = status_item["check"]
+        logger.info("Status item %s",status_item)
+        ids = status_item.get("check",[])
+        logger.info("Tds to check %s",ids)
     except Exception as e:
         logger.error("Failed to manage the mongo status item",e)
     return ids

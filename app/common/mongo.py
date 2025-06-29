@@ -61,8 +61,13 @@ async def add_item(item: dict, tag: str, collection_name: str = "semantic_output
 
 async def get_item(tag: str, collection_name: str = "semantic_output") -> dict:
     collection = db[collection_name]
-
-    return await collection.find_one({"_id": tag})
+    item = {}
+    try:
+        item = await collection.find_one({"_id": tag})
+        logger.info("Retrieved item %s",item)
+    except Exception as e:
+        logger.error("Error in get_item with tag %s and collection %s: %s", tag, collection_name, e)
+    return item
 
 async def delete_item(tag: str, collection_name: str = "semantic_output") -> dict:
     collection = db[collection_name]

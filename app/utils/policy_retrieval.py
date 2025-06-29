@@ -97,7 +97,7 @@ def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=5_0
 
         skip += batch_size
 
-    logger.info("Total IDs retrieved: %n", len(all_ids))
+    logger.info("Total IDs retrieved: %s", len(all_ids))
     return all_ids
 
 

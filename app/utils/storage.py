@@ -183,8 +183,11 @@ async def update_pqs():
     """Updates any PQs which are answered but were previously unanswered.
     Then retrieves and inserts any PQs not currently in the vector stores.
     """
+    logger.info("Starting update_pqs ========================")
     await update_answers()
+    logger.info("Pre insert_new_pqs ========================")
     await insert_new_pqs()
+    logger.info("Ending update_pqs ========================")
 
 
 async def insert_new_pqs():
@@ -298,6 +301,7 @@ def process_pqs(questions: list[dict]) -> list[int]:
 async def get_pq_stats():
 #    to_check_count = len(read_status_file(STATUS_FILE, delete=False))
     to_check_count = len(await read_status_data())
+    logger.info("To check count %s", to_check_count)
 
     stored_count = len(get_stored_pq_ids())
     return {"stored_pq_count": stored_count,
@@ -329,7 +333,7 @@ async def read_status_data() -> list[str]:
         logger.info("Status item %s",status_item)
         content = status_item.get("content",{})
         ids = content.get("check",[])
-        logger.info("Tds to check %s",ids)
+        logger.info("Ids to check %s",ids)
     except Exception as e:
         logger.error("Failed to manage the mongo status item",e)
     return ids

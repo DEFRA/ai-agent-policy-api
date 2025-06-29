@@ -296,7 +296,9 @@ def process_pqs(questions: list[dict]) -> list[int]:
 
 
 async def get_pq_stats():
-    to_check_count = len(read_status_file(STATUS_FILE, delete=False))
+#    to_check_count = len(read_status_file(STATUS_FILE, delete=False))
+    to_check_count = len(await read_status_data())
+
     stored_count = len(get_stored_pq_ids())
     return {"stored_pq_count": stored_count,
             "further_check_count": to_check_count}
@@ -325,7 +327,8 @@ async def read_status_data() -> list[str]:
     try:
         status_item = await get_item("to_check", "maintenance")
         logger.info("Status item %s",status_item)
-        ids = status_item.get("check",[])
+        content = status_item.get("content",{})
+        ids = content.get("check",[])
         logger.info("Tds to check %s",ids)
     except Exception as e:
         logger.error("Failed to manage the mongo status item",e)

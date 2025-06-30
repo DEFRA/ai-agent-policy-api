@@ -61,6 +61,7 @@ async def add_item(item: dict, tag: str, collection_name: str = "semantic_output
 
 async def get_item(tag: str, collection_name: str = "semantic_output") -> dict:
     collection = db[collection_name]
+    logger.info("Found collection %s",collection)
     item = {}
     try:
         item = await collection.find_one({"_id": tag})

@@ -6,7 +6,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI
 
-from app.common.mongo import get_mongo_client
+#from app.common.mongo import get_mongo_client
+from app.common.sync_mongo import get_mongo_client
 from app.common.tracing import TraceIdMiddleware
 from app.config import config as settings
 from app.health.router import router as health_router
@@ -26,7 +27,8 @@ async def pq_update_job():
 async def lifespan(_: FastAPI):
     # Startup
 
-    client = await get_mongo_client()
+#    client = await get_mongo_client()
+    client = get_mongo_client()
     logger.info("MongoDB client connected")
 
     if not os.getenv("OPENAI_API_KEY"):
@@ -55,7 +57,8 @@ async def lifespan(_: FastAPI):
     # Shutdown
 
     if client:
-        await client.close()
+#        await client.close()
+        client.close()
         logger.info("MongoDB client closed")
 
     scheduler.shutdown(wait=False)

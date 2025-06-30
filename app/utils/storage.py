@@ -684,11 +684,11 @@ def store_output(filename, json_content):
 async def read_output(tag):
     result = None
     # First try mongoDB
-    try:
-        result = await get_item(tag)
-        logger.info("Mongo result %s",result)
-    except Exception as e:
-        logger.error("Failed to manage the mongo chat for %s: %s", tag, e)
+ #   try:
+ #       result = await get_item(tag)
+ #       logger.info("Mongo result %s",result)
+ #   except Exception as e:
+ #       logger.error("Failed to manage the mongo chat for %s: %s", tag, e)
 
     if not result:
         filename = "semantic_chat_" + tag + ".json"

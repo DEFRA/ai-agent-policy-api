@@ -48,10 +48,9 @@ async def check_connection(client: AsyncMongoClient):
     logger.info("MongoDB PING %s", response)
 
 
-
-async def add_item(item: dict, tag: str, collection_name: str = "semantic_output"):
+async def add_item(item: dict, tag: str, collection_name: str = "semantic_output", data_name: str = "data"):
     collection = db[collection_name]
-    item_dict = {"data":item}
+    item_dict = {data_name:item}
     to_store = {"_id": tag, "content": item_dict}
 
     stored_item = (await collection.insert_one(to_store))
@@ -59,15 +58,15 @@ async def add_item(item: dict, tag: str, collection_name: str = "semantic_output
     logger.info("Stored item %s", stored_id)
 
 
-async def get_item(tag: str, collection_name: str = "semantic_output") -> dict:
+async def get_item(tag: str, collection_name: str = "semantic_output", data_name: str = "data") -> dict:
     collection = db[collection_name]
     logger.info("Found collection %s",collection)
-    item = {}
+    result = {}
     try:
         item = await collection.find_one({"_id": tag})
         logger.info("Retrieved item %s",item)
         content = item.get("content",{})
-        result = content.get("data",[])
+        result = content.get(data_name,[])
     except Exception as e:
         logger.error("Error in get_item with tag %s and collection %s: %s", tag, collection_name, e)
     return result

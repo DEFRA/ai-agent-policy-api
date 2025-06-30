@@ -12,8 +12,8 @@ from langchain.vectorstores.utils import DistanceStrategy
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from app.common.mongo import add_item, delete_item, get_item
 from app.common.s3 import S3Client
+from app.common.sync_mongo import add_item, delete_item, get_item
 
 from .policy_retrieval import (
     get_all_question_ids,
@@ -315,10 +315,10 @@ async def update_stores(questions, to_check_ids=None):
         to_check_ids.extend(not_inserted_ids)
 
 #    write_ids_file(STATUS_FILE, to_check_ids)
-    await delete_item("to_check", "maintenance")
+    delete_item("to_check", "maintenance")
     logger.info("The following PQs will be stored in mongo: \n%s", to_check_ids)
 #    db_status = {"data":to_check_ids}
-    await add_item(to_check_ids, "to_check", "maintenance")
+    add_item(to_check_ids, "to_check", "maintenance")
 
 
 async def read_status_data() -> list[str]:
@@ -332,7 +332,7 @@ async def read_status_data() -> list[str]:
         content = status_item.get("content",{})
         ids = content.get("data",[])
         """
-        ids = await get_item("to_check", collection_name="maintenance", data_name="check")
+        ids = get_item("to_check", collection_name="maintenance", data_name="check")
         logger.info("Ids to check %s",ids)
     except Exception as e:
         logger.error("Failed to manage the mongo status item",e)
@@ -666,7 +666,7 @@ def get_answer_match(question, limit):
                         )
     return [{"id":doc.id, "answer":doc.page_content, "score":float(score)} for doc,score in documents]
 
-async def store_output(tag, json_content):
+def store_output(tag, json_content):
     filename = "semantic_chat_" + tag + ".json"
     s3_client = S3Client()
     # hack to overcome ruff insistence on avoiding /tmp
@@ -681,13 +681,13 @@ async def store_output(tag, json_content):
 
     s3_client.upload_file(target)
     # now double up with mongo
-    await add_item(item=json_content, tag=tag)
+    add_item(item=json_content, tag=tag)
 
-async def read_output(tag):
+def read_output(tag):
     result = None
     # First try mongoDB
     try:
-        result = await get_item(tag)
+        result = get_item(tag)
         logger.info("Mongo result %s",result)
     except Exception as e:
         logger.error("Failed to manage the mongo chat for %s: %s", tag, e)
@@ -721,7 +721,7 @@ async def load_status():
     if len(ids) > 0:
         logger.info("The following PQs will be stored: \n%s", ids)
 #        db_status = {"data":ids}
-        await add_item(ids, "to_check", "maintenance")
+        add_item(ids, "to_check", "maintenance")
     else:
         logger.info("No statuses to check")
         return

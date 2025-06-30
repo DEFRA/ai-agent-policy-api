@@ -51,8 +51,8 @@ async def check_connection(client: AsyncMongoClient):
 
 async def add_item(item: dict, tag: str, collection_name: str = "semantic_output"):
     collection = db[collection_name]
-
-    to_store = {"_id": tag, "content": item}
+    item_dict = {"data":item}
+    to_store = {"_id": tag, "content": item_dict}
 
     stored_item = (await collection.insert_one(to_store))
     stored_id = stored_item.inserted_id
@@ -65,9 +65,11 @@ async def get_item(tag: str, collection_name: str = "semantic_output") -> dict:
     try:
         item = await collection.find_one({"_id": tag})
         logger.info("Retrieved item %s",item)
+        content = item.get("content",{})
+        result = content.get("data",[])
     except Exception as e:
         logger.error("Error in get_item with tag %s and collection %s: %s", tag, collection_name, e)
-    return item
+    return result
 
 async def delete_item(tag: str, collection_name: str = "semantic_output") -> dict:
     collection = db[collection_name]

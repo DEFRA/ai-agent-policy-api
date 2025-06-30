@@ -185,7 +185,7 @@ async def semantic_chat_result(tag: str = Query("", description="Semantic Query 
     """
     Returns the result of the last semantic chat pipeline run if available.
     """
-    return read_output("semantic_chat_" + tag + ".json")
+    return read_output(tag)
 
 
 

@@ -113,7 +113,7 @@ async def semantic_chat_background(request: SemanticChatRequest,
         A dictionary containing the time-based tag for use in querying the
         generated result.
     """
-    tag =  datetime.now(timezone.utc).strftime("%Y%d%m_%H%M%S_%f")
+    tag =  datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
     background_tasks.add_task(semantic_pipeline, request, tag)
     return {"message":f"{tag}" }
 

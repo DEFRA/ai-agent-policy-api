@@ -666,7 +666,7 @@ def get_answer_match(question, limit):
                         )
     return [{"id":doc.id, "answer":doc.page_content, "score":float(score)} for doc,score in documents]
 
-def store_output(tag, json_content):
+async def store_output(tag, json_content):
     filename = "semantic_chat_" + tag + ".json"
     s3_client = S3Client()
     # hack to overcome ruff insistence on avoiding /tmp

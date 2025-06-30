@@ -154,7 +154,7 @@ def get_stored_pq_ids() -> list[int]:
         pids = [int(pid) for pid in vector_store.index_to_docstore_id.values()]
 
     except Exception as e:
-        logger.error("Failed to load vector store at %s: %s", e, store_dir, e)
+        logger.error("Failed to load vector store at %s: %s", store_dir, e)
 
     return pids
 
@@ -517,7 +517,7 @@ def create_directory_if_necessary(directory_name: str):
             path.mkdir()
 
     except Exception as e:
-        logger.error("Error creating %s directory: %s", e, path, e)
+        logger.error("Error creating %s directory: %s", path, e)
 
 
 async def add_pqs_file(filename: str):

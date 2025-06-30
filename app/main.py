@@ -29,7 +29,7 @@ async def lifespan(_: FastAPI):
 
 #    client = await get_mongo_client()
     client = get_mongo_client()
-    logger.info("MongoDB client connected")
+    logger.info("MongoDB client connected: %s", client)
 
     if not os.getenv("OPENAI_API_KEY"):
         print("Retrieving OPENAI API key")

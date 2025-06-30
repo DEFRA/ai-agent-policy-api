@@ -220,6 +220,7 @@ async def update_answers():
     ids = await read_status_data()
 
     if len(ids) > 0:
+        ids = list(set(ids))
         logger.info("The following PQs will be checked for answers: \n%s", ids)
     else:
         logger.info("No statuses to check")
@@ -293,7 +294,6 @@ def process_pqs(questions: list[dict]) -> list[int]:
     return list(set(revisit_ids).union(set(question_ids_not_added),set(answer_ids_not_added)))
 
 
-
 async def get_pq_stats():
 #    to_check_count = len(read_status_file(STATUS_FILE, delete=False))
     to_check_count = len(await read_status_data())
@@ -333,6 +333,7 @@ async def read_status_data() -> list[str]:
         ids = content.get("data",[])
         """
         ids = get_item("to_check", collection_name="maintenance", data_name="check")
+        ids = list(set(ids))
         logger.info("Ids to check %s",ids)
     except Exception as e:
         logger.error("Failed to manage the mongo status item",e)

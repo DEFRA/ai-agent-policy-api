@@ -118,7 +118,7 @@ async def semantic_chat_background(request: SemanticChatRequest,
     return {"message":f"{tag}" }
 
 
-def semantic_pipeline(request: SemanticChatRequest, tag: str):
+async def semantic_pipeline(request: SemanticChatRequest, tag: str):
     """
     LangGraph-powered semantic chat endpoint.
 
@@ -177,7 +177,7 @@ def semantic_pipeline(request: SemanticChatRequest, tag: str):
     except Exception:
         output = {"message":"Error in semantic chat workflow: {e}"}
 
-    store_output(tag, output)
+    await store_output(tag, output)
 
 
 @router.get("/chat/semantic_output")

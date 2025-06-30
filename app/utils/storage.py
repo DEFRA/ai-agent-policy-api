@@ -681,7 +681,7 @@ def store_output(filename, json_content):
     s3_client.upload_file(target)
 
 
-def read_output(tag):
+async def read_output(tag):
     result = None
     # First try mongoDB
     try:

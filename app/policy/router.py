@@ -118,7 +118,7 @@ async def semantic_chat_background(request: SemanticChatRequest,
     return {"message":f"{tag}" }
 
 
-def semantic_pipeline(request: SemanticChatRequest, tag: str):
+async def semantic_pipeline(request: SemanticChatRequest, tag: str):
     """
     LangGraph-powered semantic chat endpoint.
 

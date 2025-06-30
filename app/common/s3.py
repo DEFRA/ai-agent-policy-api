@@ -39,7 +39,7 @@ class S3Client:
             logger.info("%s exists in %s", object_name, self.bucket_name)
             return True
         except Exception as e:
-            logger.error("Failed to find %s in %s: %s", object_name, e, self.bucket_name, e)
+            logger.error("Failed to find %s in %s: %s", object_name, self.bucket_name, e)
         return False
 
     def upload_file(self, file_name: str, object_name: str = None) -> None:
@@ -59,7 +59,7 @@ class S3Client:
             self.s3.download_file(self.bucket_name, object_name, file_name)
             logger.info("File %s downloaded as %s", object_name, file_name)
         except Exception as e:
-            logger.error("Download failed for object %s with file name %s : %s", object_name, e, file_name, e)
+            logger.error("Download failed for object %s with file name %s : %s", object_name, file_name, e)
 
     def close_connection(self):
         """Closes the S3 client connection."""

@@ -332,7 +332,7 @@ async def read_status_data() -> list[str]:
         content = status_item.get("content",{})
         ids = content.get("data",[])
         """
-        ids = await get_item("to_check", "maintenance")
+        ids = await get_item("to_check", collection_name="maintenance", data_name="check")
         logger.info("Ids to check %s",ids)
     except Exception as e:
         logger.error("Failed to manage the mongo status item",e)
@@ -666,7 +666,8 @@ def get_answer_match(question, limit):
                         )
     return [{"id":doc.id, "answer":doc.page_content, "score":float(score)} for doc,score in documents]
 
-def store_output(filename, json_content):
+async def store_output(tag, json_content):
+    filename = "semantic_chat_" + tag + ".json"
     s3_client = S3Client()
     # hack to overcome ruff insistence on avoiding /tmp
 
@@ -679,16 +680,17 @@ def store_output(filename, json_content):
         json.dump(json_content, f)
 
     s3_client.upload_file(target)
-
+    # now double up with mongo
+    await add_item(item=json_content, tag=tag)
 
 async def read_output(tag):
     result = None
     # First try mongoDB
- #   try:
- #       result = await get_item(tag)
- #       logger.info("Mongo result %s",result)
- #   except Exception as e:
- #       logger.error("Failed to manage the mongo chat for %s: %s", tag, e)
+    try:
+        result = await get_item(tag)
+        logger.info("Mongo result %s",result)
+    except Exception as e:
+        logger.error("Failed to manage the mongo chat for %s: %s", tag, e)
 
     if not result:
         filename = "semantic_chat_" + tag + ".json"

@@ -394,7 +394,7 @@ def write_ids_file(filename:str, ids:list[str]):
     try:
         s3_client.upload_file(id_file)
     except Exception as e:
-        logger.error("Error storing %s in S3: %s", e, id_file, e)
+        logger.error("Error storing %s in S3: %s", id_file, e)
 
 
 def create_vector_store(s3_client: S3Client,

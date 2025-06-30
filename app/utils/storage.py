@@ -332,7 +332,7 @@ async def read_status_data() -> list[str]:
         content = status_item.get("content",{})
         ids = content.get("data",[])
         """
-        ids = get_item("to_check", collection_name="maintenance", data_name="check")
+        ids = get_item("to_check", collection_name="maintenance", data_name="data")
         ids = list(set(ids))
         logger.info("Ids to check %s",ids)
     except Exception as e:

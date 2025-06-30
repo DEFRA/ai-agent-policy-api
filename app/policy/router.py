@@ -177,7 +177,7 @@ def semantic_pipeline(request: SemanticChatRequest, tag: str):
     except Exception:
         output = {"message":"Error in semantic chat workflow: {e}"}
 
-    store_output(tag, output)
+    await store_output(tag, output)
 
 
 @router.get("/chat/semantic_output")

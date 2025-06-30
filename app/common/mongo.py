@@ -65,8 +65,9 @@ async def get_item(tag: str, collection_name: str = "semantic_output", data_name
     try:
         item = await collection.find_one({"_id": tag})
         logger.info("Retrieved item %s",item)
-        content = item.get("content",{})
-        result = content.get(data_name,[])
+        if item is not None:
+            content = item.get("content",{})
+            result = content.get(data_name,[])
     except Exception as e:
         logger.error("Error in get_item with tag %s and collection %s: %s", tag, collection_name, e)
     return result

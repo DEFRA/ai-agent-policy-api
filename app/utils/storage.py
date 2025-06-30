@@ -317,8 +317,8 @@ async def update_stores(questions, to_check_ids=None):
 #    write_ids_file(STATUS_FILE, to_check_ids)
     await delete_item("to_check", "maintenance")
     logger.info("The following PQs will be stored in mongo: \n%s", to_check_ids)
-    db_status = {"check":to_check_ids}
-    await add_item(db_status, "to_check", "maintenance")
+#    db_status = {"data":to_check_ids}
+    await add_item(to_check_ids, "to_check", "maintenance")
 
 
 async def read_status_data() -> list[str]:
@@ -326,10 +326,13 @@ async def read_status_data() -> list[str]:
     ids = []
 
     try:
+        """
         status_item = await get_item("to_check", "maintenance")
         logger.info("Status item %s",status_item)
         content = status_item.get("content",{})
-        ids = content.get("check",[])
+        ids = content.get("data",[])
+        """
+        ids = await get_item("to_check", "maintenance")
         logger.info("Ids to check %s",ids)
     except Exception as e:
         logger.error("Failed to manage the mongo status item",e)
@@ -678,25 +681,35 @@ def store_output(filename, json_content):
     s3_client.upload_file(target)
 
 
-def read_output(filename):
-    s3_client = S3Client()
-    # hack to overcome ruff insistence on avoiding /tmp
-    store_dir = "/" + TMP + QUESTION_STORE_DIR
+def read_output(tag):
+    result = None
+    # First try mongoDB
+    try:
+        result = await get_item(tag)
+        logger.info("Mongo result %s",result)
+    except Exception as e:
+        logger.error("Failed to manage the mongo chat for %s: %s", tag, e)
 
-    target =  store_dir + filename
+    if not result:
+        filename = "semantic_chat_" + tag + ".json"
+        s3_client = S3Client()
+        # hack to overcome ruff insistence on avoiding /tmp
+        store_dir = "/" + TMP + QUESTION_STORE_DIR
 
-    exists = s3_client.check_object_existence(target)
+        target =  store_dir + filename
 
-    if not exists:
-       return {"message":"Semantic Chat output not yet available, please try again soon."}
+        exists = s3_client.check_object_existence(target)
 
-    create_directory_if_necessary(store_dir)
+        if not exists:
+           return {"message":"Semantic Chat output not yet available, please try again soon."}
 
-    s3_client.download_file(target, target)
+        create_directory_if_necessary(store_dir)
 
-    with open(target) as file:
-        result = json.load(file)
-        logger.info("Generated output: %s", result)
+        s3_client.download_file(target, target)
+
+        with open(target) as file:
+            result = json.load(file)
+            logger.info("Generated output: %s", result)
 
     return result
 
@@ -705,8 +718,8 @@ async def load_status():
 
     if len(ids) > 0:
         logger.info("The following PQs will be stored: \n%s", ids)
-        db_status = {"check":ids}
-        await add_item(db_status, "to_check", "maintenance")
+#        db_status = {"data":ids}
+        await add_item(ids, "to_check", "maintenance")
     else:
         logger.info("No statuses to check")
         return

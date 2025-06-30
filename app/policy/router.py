@@ -7,8 +7,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from app.common.http_client import async_client
-from app.common.mongo import get_db
+from app.common.sync_mongo import get_db
 
+#from app.common.mongo import get_db
 # LangGraph imports
 from app.langgraph_service import get_semantic_graph, run_semantic_chat
 from app.utils.storage import (
@@ -274,8 +275,10 @@ async def store_status():
 
 @router.get("/db")
 async def db_query(db=Depends(get_db)):
-    await db.example.insert_one({"foo": "bar"})
-    data = await db.example.find_one({}, {"_id": 0})
+#    await db.example.insert_one({"foo": "bar"})
+#    data = await db.example.find_one({}, {"_id": 0})
+    db.example.insert_one({"foo": "bar"})
+    data = db.example.find_one({}, {"_id": 0})
     return {"ok": data}
 
 

@@ -12,6 +12,7 @@ from app.common.tracing import TraceIdMiddleware
 from app.config import config as settings
 from app.health.router import router as health_router
 from app.langgraph_service import build_semantic_chat_graph
+from app.maintenance.router import router as maintenance_router
 from app.policy.router import router as policy_router
 from app.utils.storage import check_storage, update_pqs
 
@@ -73,3 +74,4 @@ app.add_middleware(TraceIdMiddleware)
 # Setup Routes
 app.include_router(health_router)
 app.include_router(policy_router)
+app.include_router(maintenance_router)

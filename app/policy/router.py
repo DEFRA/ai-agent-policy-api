@@ -275,6 +275,25 @@ async def get_content(key: str = Query("", description="item key"),
     return {"Mongo record":item}
 
 
+@router.get("/db_update")
+async def replace_content(item: str = Query("", description="item"),
+                      key: str = Query("", description="item key"),
+                      collection: str = Query("", description="mongo collection"),
+                      name: str = Query("", description="name of data structure")):
+    """Retrieves mongo content."""
+    item = replace_item(item=item, tag=key, collection_name=collection, data_name=name)
+    return {"Mongo record":item}
+
+
+
+@router.get("/db_list")
+async def list_items(collection: str = Query("", description="mongo collection")):
+    """Retrieves mongo content."""
+    items = list_item_ids(collection_name=collection)
+    return {"Stored Items":items}
+
+
+
 @router.get("/db")
 async def db_query(db=Depends(get_db)):
 #    await db.example.insert_one({"foo": "bar"})

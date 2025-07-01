@@ -49,7 +49,7 @@ def check_connection(client: MongoClient):
     logger.info("MongoDB PING %s", response)
 
 
-def add_item(item: dict, tag: str, collection_name: str = "semantic_output", data_name: str = "data"):
+def add_item(item: dict, tag: str, collection_name: str = "semantic_output", data_name: str = "data") -> str:
     collection = db[collection_name]
     item_dict = {data_name:item}
     to_store = {"_id": tag, "content": item_dict}
@@ -57,6 +57,7 @@ def add_item(item: dict, tag: str, collection_name: str = "semantic_output", dat
     stored_item = (collection.insert_one(to_store))
     stored_id = stored_item.inserted_id
     logger.info("Stored item %s", stored_id)
+    return stored_id
 
 
 def get_item(tag: str, collection_name: str = "semantic_output", data_name: str = "data") -> dict:
@@ -77,3 +78,11 @@ def delete_item(tag: str, collection_name: str = "semantic_output") -> dict:
     collection = db[collection_name]
 
     return collection.delete_one({"_id": tag})
+
+def replace_item(item, tag: str, collection_name: str = "semantic_output", data_name: str = "data"):
+    delete_item(tag, collection_name)
+    return add_item(item, tag, collection_name, data_name)
+
+def list_item_ids(collection_name: str = "semantic_output"):
+    collection = db[collection_name]
+    return collection.distinct("_id")

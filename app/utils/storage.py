@@ -333,7 +333,8 @@ async def read_status_data() -> list[str]:
         ids = content.get("data",[])
         """
         ids = get_item("to_check", collection_name="maintenance", data_name="data")
-        ids = list(set(ids))
+        ids = [int(pid) for pid in ids]
+        ids = set(ids)
         logger.info("Ids to check %s",ids)
     except Exception as e:
         logger.error("Failed to manage the mongo status item",e)

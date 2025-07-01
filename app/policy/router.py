@@ -7,7 +7,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from app.common.http_client import async_client
-from app.common.sync_mongo import get_db
+from app.common.sync_mongo import get_db, get_item
 
 #from app.common.mongo import get_db
 # LangGraph imports
@@ -16,7 +16,6 @@ from app.utils.storage import (
     get_answer_match,
     get_pq_stats,
     get_question_match,
-    load_status,
     read_output,
     store_output,
     update_pqs,
@@ -267,11 +266,14 @@ async def show_stats():
     stats = await get_pq_stats()
     return {"PQ stats":stats}
 
-@router.get("/store_status")
-async def store_status():
-    """Retrieves ids from status file and inserts into mongo."""
-    result = await load_status()
-    return {"load_status":result}
+@router.get("/db_query")
+async def get_content(key: str = Query("", description="item key"),
+                      collection: str = Query("", description="mongo collection"),
+                      name: str = Query("", description="name of data structure")):
+    """Retrieves mongo content."""
+    item = get_item(tag=key, collection_name=collection, data_name=name)
+    return {"Mongo record":item}
+
 
 @router.get("/db")
 async def db_query(db=Depends(get_db)):

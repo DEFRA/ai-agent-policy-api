@@ -337,7 +337,7 @@ async def read_status_data() -> list[str]:
         ids = set(ids)
         logger.info("Ids to check %s",ids)
     except Exception as e:
-        logger.error("Failed to manage the mongo status item",e)
+        logger.error("Failed to manage the mongo status item: %s",e)
     return ids
 
 def read_status_file(filename: str, delete: bool = False) -> list[str]:

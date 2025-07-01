@@ -21,14 +21,6 @@ class SemanticChatRequest(BaseModel):
     question: str
 
 
-@router.get("/")
-async def root():
-    """Root endpoint returning API information"""
-    return {
-        "message": "Policy Maintenance",
-        "version": "1.0.0",
-    }
-
 
 @router.get("/update")
 async def answer_status(background_tasks: BackgroundTasks):

@@ -713,7 +713,10 @@ def store_output(tag, json_content):
 
     s3_client.upload_file(target)
     # now double up with mongo
-    add_item(item=json_content, tag=tag)
+
+    to_store = {"chat":json_content, "timestamp":tag}
+
+    add_item(item=to_store, tag=tag)
 
 def read_output(tag):
     result = None

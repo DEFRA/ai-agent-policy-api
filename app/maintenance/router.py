@@ -1,3 +1,5 @@
+import ast
+
 from logging import getLogger
 
 from fastapi import APIRouter, BackgroundTasks, Query
@@ -12,7 +14,7 @@ from app.utils.storage import (
     update_pqs,
 )
 
-router = APIRouter(prefix="/policy")
+router = APIRouter(prefix="/maintenance")
 logger = getLogger(__name__)
 
 # Pydantic models for request/response
@@ -50,7 +52,7 @@ async def replace_content(item: str = Query("", description="item"),
                       collection: str = Query("", description="mongo collection"),
                       name: str = Query("", description="name of data structure")):
     """Retrieves mongo content."""
-    item = replace_item(item=item, tag=key, collection_name=collection, data_name=name)
+    item = replace_item(item=ast.literal_eval(item), tag=key, collection_name=collection, data_name=name)
     return {"Mongo record":item}
 
 

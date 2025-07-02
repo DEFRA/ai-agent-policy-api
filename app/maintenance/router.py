@@ -1,5 +1,4 @@
 import ast
-
 from logging import getLogger
 
 from fastapi import APIRouter, BackgroundTasks, Query

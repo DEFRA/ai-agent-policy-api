@@ -164,7 +164,7 @@ def remove_pq_vectors(store, documents: list[Document]) -> tuple[list[int], list
     are contained in the supplied Documents.
     Returns a success status.
     """
-    del_ids = [d.id for d in documents]
+    del_ids = [int(d.id) for d in documents]
     success_ids = []
     failure_ids = []
     # To avoid one failed deletion ending in failure
@@ -483,7 +483,7 @@ def update_vector_store(s3_client: S3Client,
     logger.info("Updating store with %s PQs", len(documents))
 
     # save these ids in case of update failure
-    ids_to_be_inserted = [doc.id for doc in documents]
+    ids_to_be_inserted = [int(doc.id) for doc in documents]
     added_ids = []
 
     vector_store = None

@@ -7,9 +7,9 @@ from pydantic import BaseModel
 from app.common.sync_mongo import get_item, list_item_ids, replace_item
 
 #from app.common.mongo import get_db
-# LangGraph imports
 from app.utils.storage import (
     get_pq_stats,
+    read_status_file,
     update_pqs,
 )
 
@@ -43,6 +43,18 @@ async def get_content(key: str = Query("", description="item key"),
     """Retrieves mongo content."""
     item = get_item(tag=key, collection_name=collection, data_name=name)
     return {"Mongo record":item}
+
+
+@router.get("/db_file_update")
+async def replace_content_from_file(filename: str = Query("", description="File to be uploaded"),
+                      key: str = Query("", description="item key"),
+                      collection: str = Query("", description="mongo collection"),
+                      name: str = Query("", description="name of data structure")):
+    data = read_status_file(filename)
+    """Retrieves mongo content."""
+    item = replace_item(item=data, tag=key, collection_name=collection, data_name=name)
+    return {"Mongo record":item}
+
 
 
 @router.get("/db_update")

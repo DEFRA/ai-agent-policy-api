@@ -122,7 +122,8 @@ def get_missing_pq_ids() -> list[int]:
     except Exception as e:
         logger.error("Error retrieving ids: %s", e)
         return []
-
+    logger.info("First few from all_ids %s",all_ids[:5])
+    logger.info("First few from stored_ids %s",stored_ids[:5])
     all_set = set(all_ids)
     stored_set = set(stored_ids)
 
@@ -168,6 +169,7 @@ def remove_pq_vectors(store, documents: list[Document]) -> tuple[list[int], list
     failure_ids = []
     # To avoid one failed deletion ending in failure
     # delete single PQs rather than as a batch
+    logger.info("Del ids %s",del_ids[:5])
     for pid in del_ids:
         try:
             store.delete([pid])
@@ -196,6 +198,7 @@ async def insert_new_pqs():
     """
     missing_ids = get_missing_pq_ids()
     logger.info("Count of missing PQs: %s", len(missing_ids))
+    logger.info("Missing ids %s",missing_ids)
     if not missing_ids:
         return
 
@@ -273,6 +276,7 @@ def process_pqs(questions: list[dict]) -> list[int]:
             question["answerText"] = "<p></p>"
         else:
             logger.info("PQ %s has an answer",question["id"])
+    logger.info("Revisit ids %s",revisit_ids[:5])
     try:
         # The necessary PQ transformations are simpler using pandas
 
@@ -280,6 +284,7 @@ def process_pqs(questions: list[dict]) -> list[int]:
         df = populate_embeddable_questions(df)
 
         question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
+        logger.info("Failed ids %s",failed_ids[:5])
 
         # if some PQs have failed the document creation, they're stored for later
         revisit_ids.extend(failed_ids)
@@ -290,7 +295,8 @@ def process_pqs(questions: list[dict]) -> list[int]:
         logger.error("Failed to update stores with PQs \n%s:\n %s",success_ids,e)
 
     # assemble list of ids not added at some stage
-
+    logger.info("QIDS not added %s",question_ids_not_added[:5])
+    logger.info("AIDS not added %s",answer_ids_not_added[:5])
     return list(set(revisit_ids).union(set(question_ids_not_added),set(answer_ids_not_added)))
 
 
@@ -312,6 +318,8 @@ async def update_stores(questions, to_check_ids=None):
         to_check_ids = []
     if questions:
         not_inserted_ids = process_pqs(questions)
+        logger.info("To check ids %s",to_check_ids)
+        logger.info("Not inserted ids %s",not_inserted_ids)
         to_check_ids.extend(not_inserted_ids)
 
 #    write_ids_file(STATUS_FILE, to_check_ids)
@@ -414,7 +422,7 @@ def read_chat_file(tag: str) -> dict:
 def write_ids_file(filename:str, ids:list[str]):
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     id_file = store_dir + filename
-
+    logger.info("write_ids_file %s", ids[:5])
     try:
         with open(id_file, "w") as csvfile:
             writer = csv.writer(csvfile)

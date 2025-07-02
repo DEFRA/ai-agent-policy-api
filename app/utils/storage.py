@@ -367,7 +367,7 @@ def read_status_file(filename: str, delete: bool = False) -> list[str]:
             with open(file,encoding="utf-8") as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
-                    lines.append(row[0])
+                    lines.append(int(row[0]))
             logger.info("Read %s items from file.", len(lines) )
         except Exception as e:
             logger.error("Error downloading/reading %s from S3: %s", file, e)

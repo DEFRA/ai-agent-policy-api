@@ -381,6 +381,36 @@ def read_status_file(filename: str, delete: bool = False) -> list[str]:
 
     return lines
 
+
+def read_chat_file(tag: str) -> dict:
+    """Downloads the named file from S3, and returns the
+    contents as a list of strings.
+    The file is deleted to avoid accidental reuse.
+    """
+    # load file containing the ids to check using pq api
+    # hack to overcome ruff insistence on avoiding /tmp
+    store_dir = "/" + TMP + QUESTION_STORE_DIR
+    filename = "semantic_chat_" + tag + ".json"
+    s3_client = S3Client()
+
+    target =  store_dir + filename
+
+    exists = s3_client.check_object_existence(target)
+
+    if not exists:
+       return {"message":"Semantic Chat output not yet available, please try again soon."}
+
+    create_directory_if_necessary(store_dir)
+
+    s3_client.download_file(target, target)
+
+    with open(target) as file:
+        result = json.load(file)
+        logger.info("File generated output: %s", result)
+
+    return result
+
+
 def write_ids_file(filename:str, ids:list[str]):
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     id_file = store_dir + filename
@@ -695,25 +725,7 @@ def read_output(tag):
         logger.error("Failed to manage the mongo chat for %s: %s", tag, e)
 
     if not result:
-        filename = "semantic_chat_" + tag + ".json"
-        s3_client = S3Client()
-        # hack to overcome ruff insistence on avoiding /tmp
-        store_dir = "/" + TMP + QUESTION_STORE_DIR
-
-        target =  store_dir + filename
-
-        exists = s3_client.check_object_existence(target)
-
-        if not exists:
-           return {"message":"Semantic Chat output not yet available, please try again soon."}
-
-        create_directory_if_necessary(store_dir)
-
-        s3_client.download_file(target, target)
-
-        with open(target) as file:
-            result = json.load(file)
-            logger.info("Generated output: %s", result)
+        result = read_chat_file(tag)
 
     return result
 

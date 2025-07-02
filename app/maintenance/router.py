@@ -47,10 +47,11 @@ async def get_content(key: str = Query("", description="item key"),
 
 
 @router.get("/db_chat_storage")
-async def insert_chat(tag: str = Query("", description="chat tag")):
+async def insert_chat(tag: str = Query("", description="chat tag"),
+                      timestamp: str = Query("", description="timestamp")):
     data = read_chat_file(tag)
-
-    item = replace_item(item=data, tag=tag)
+    to_store = {"chat":data, "timestamp":timestamp}
+    item = replace_item(item=to_store, tag=tag)
     return {"Mongo record key":item}
 
 

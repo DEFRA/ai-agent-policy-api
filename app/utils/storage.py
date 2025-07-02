@@ -719,7 +719,11 @@ def read_output(tag):
     result = None
     # First try mongoDB
     try:
-        result = get_item(tag)
+        stored_result = get_item(tag)
+        if stored_result.get("timestamp","") is not None:
+            result = stored_result.get("chat",{})
+        else:
+            result = stored_result
         logger.info("Mongo result %s",result)
     except Exception as e:
         logger.error("Failed to manage the mongo chat for %s: %s", tag, e)

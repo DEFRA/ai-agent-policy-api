@@ -390,6 +390,41 @@ def read_status_file(filename: str, delete: bool = False) -> list[str]:
     return lines
 
 
+def read_tags_file(filename: str) -> list[str]:
+    """Downloads the named file from S3, and returns the
+    contents as a list of strings.
+    The file is deleted to avoid accidental reuse.
+    """
+    # load file containing the ids to check using pq api
+    # hack to overcome ruff insistence on avoiding /tmp
+    store_dir = "/" + TMP + QUESTION_STORE_DIR
+    file = store_dir + filename
+
+    lines = []
+
+    s3_client = S3Client()
+
+    exists = s3_client.check_object_existence(file)
+
+    if not exists:
+        logger.error("File %s not found - exiting!", file)
+    else:
+        create_directory_if_necessary(store_dir)
+
+        try:
+            s3_client.download_file(file, file)
+
+            with open(file,encoding="utf-8") as csvfile:
+                reader = csv.reader(csvfile)
+                for row in reader:
+                    lines.append(row)
+            logger.info("Read %s items from file.", len(lines) )
+        except Exception as e:
+            logger.error("Error downloading/reading %s from S3: %s", file, e)
+
+    return lines
+
+
 def read_chat_file(tag: str) -> dict:
     """Downloads the named file from S3, and returns the
     contents as a list of strings.

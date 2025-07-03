@@ -11,6 +11,7 @@ from app.utils.storage import (
     get_pq_stats,
     read_chat_file,
     read_status_file,
+    read_tags_file,
     update_pqs,
 )
 
@@ -83,3 +84,11 @@ async def list_items(collection: str = Query("", description="mongo collection")
     """Retrieves mongo content."""
     items = list_item_ids(collection_name=collection)
     return {"Stored Items":items}
+
+
+@router.get("/chat_bulk_upload")
+async def bulk_insert(filename: str = Query("", description="filename")):
+    tags = read_tags_file(filename)
+    for tag, timestamp in tags:
+        insert_chat(tag, timestamp)
+    return {"Stored chats":len(tags)}

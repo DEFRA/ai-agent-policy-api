@@ -90,6 +90,6 @@ async def list_items(collection: str = Query("", description="mongo collection")
 async def bulk_insert(filename: str = Query("", description="filename to upload")):
     tags = read_tags_file(filename)
     logger.info(tags)
-    for tag, timestamp in tags:
-        print(await insert_chat(tag, timestamp))
+    for t in tags:
+        print(await insert_chat(t[0], t[1]))
     return {"Stored chats":len(tags)}

@@ -89,6 +89,7 @@ async def list_items(collection: str = Query("", description="mongo collection")
 @router.get("/chat_bulk_upload")
 async def bulk_insert(filename: str = Query("", description="filename")):
     tags = read_tags_file(filename)
+    logger.info(tags)
     for tag, timestamp in tags:
-        insert_chat(tag, timestamp)
+        print(await insert_chat(tag, timestamp))
     return {"Stored chats":len(tags)}

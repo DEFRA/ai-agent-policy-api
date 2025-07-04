@@ -31,6 +31,8 @@ UPDATE_FILE = "pq_update.csv"
 
 question_store = None
 answer_store = None
+s3_client = S3Client()
+embed_model = None
 
 pq_ids = []
 
@@ -113,17 +115,17 @@ def create_documents(df: pd.DataFrame) -> tuple(list[Any]):
 
 
 def get_missing_pq_ids() -> list[int]:
+    """Returns PQ ids retrieved from the Written Questions API that
+    don't exist in the Questions vector store.
+    """
     stored_ids = get_stored_pq_ids()
-    logger.info("The stored PQs count: %s", len(stored_ids))
 
     try:
         all_ids = get_all_question_ids(answering_body_id=13, house="Commons")
-        logger.info("Retrieved %s PQs from parliament api", len(all_ids))
     except Exception as e:
         logger.error("Error retrieving ids: %s", e)
         return []
-    logger.info("First few from all_ids %s",all_ids[:5])
-    logger.info("First few from stored_ids %s",stored_ids[:5])
+
     all_set = set(all_ids)
     stored_set = set(stored_ids)
 
@@ -133,12 +135,12 @@ def get_missing_pq_ids() -> list[int]:
 
 def get_stored_pq_ids() -> list[int]:
     """Retrieves the PQ ids from the Question store - we should have the
-    same ids in the Answer store
+    same ids in the Answer store.
     """
-    s3_client = S3Client()
-    embed_model = OpenAIEmbeddings(
-                       model="text-embedding-3-small",
-                    )
+#    s3_client = S3Client()
+#    embed_model = OpenAIEmbeddings(
+#                       model="text-embedding-3-small",
+#                    )
 
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     exists = s3_client.check_object_existence(store_dir + "index.faiss")
@@ -150,7 +152,8 @@ def get_stored_pq_ids() -> list[int]:
         return pids
 
     try:
-        vector_store = load_store(s3_client, store_dir, embed_model)
+        vector_store = load_store(store_dir)
+#        vector_store = load_store(s3_client, store_dir, embed_model)
 
         pids = [int(pid) for pid in vector_store.index_to_docstore_id.values()]
 
@@ -185,11 +188,37 @@ async def update_pqs():
     """Updates any PQs which are answered but were previously unanswered.
     Then retrieves and inserts any PQs not currently in the vector stores.
     """
-    logger.info("Starting update_pqs ========================")
+    logger.info("*** update_pqs begun ***")
     await update_answers()
-    logger.info("Pre insert_new_pqs ========================")
     await insert_new_pqs()
-    logger.info("Ending update_pqs ========================")
+    logger.info("*** update_pqs ended ***")
+
+
+async def update_answers():
+    """Reads the collection of PQ ids marked for checking. This is currently only used
+    to check for PQs that have no answer, but may have been answered since they were
+    inserted in the vector stores.
+
+    The PQs associated with these ids are retrieved, with any failed retrievals recorded
+    by having their ids recorded for subsequent attempts.
+    """
+#    ids = read_ids_file(STATUS_FILE, delete=True)
+    ids = await read_status_data()
+
+    if len(ids) > 0:
+        ids = list(set(ids))
+        logger.info("The following PQs will be checked for answers: \n%s", ids)
+    else:
+        logger.info("No statuses to check")
+        return
+
+    questions, not_retrieved_ids = get_specific_question_details(ids)
+
+    if not_retrieved_ids:
+        logger.error("The following PQs requiring answers were not retrieved successfully: %s", not_retrieved_ids)
+
+    # now update the PQs that do have answers while storing the ids that still don't
+    await update_stores(questions, not_retrieved_ids)
 
 
 async def insert_new_pqs():
@@ -209,33 +238,6 @@ async def insert_new_pqs():
         logger.error("The following PQs were not retrieved successfully: %s", not_retrieved_ids)
 
     await update_stores(questions)
-
-
-async def update_answers():
-    """Reads the collection of PQ ids marked for checking. This is currently only used
-    to check for PQs that have no answer, but may have been answered since they were
-    inserted in the vector stores.
-
-    The PQs associated with these ids are retrieved, with any failed retrievals recorded
-    by having their ids recorded for subsequent attempts.
-    """
-#    ids = read_status_file(STATUS_FILE, delete=True)
-    ids = await read_status_data()
-
-    if len(ids) > 0:
-        ids = list(set(ids))
-        logger.info("The following PQs will be checked for answers: \n%s", ids)
-    else:
-        logger.info("No statuses to check")
-        return
-
-    questions, not_retrieved_ids = get_specific_question_details(ids)
-
-    if not_retrieved_ids:
-        logger.error("The following PQs requiring answers were not retrieved successfully: %s", not_retrieved_ids)
-
-    # now update the PQs that do have answers while storing the ids that still don't
-    await update_stores(questions, not_retrieved_ids)
 
 
 def process_pqs(questions: list[dict]) -> list[int]:
@@ -261,10 +263,10 @@ def process_pqs(questions: list[dict]) -> list[int]:
 
     revisit_ids = []
 
-    s3_client = S3Client()
-    embed_model = OpenAIEmbeddings(
-                       model="text-embedding-3-small",
-                    )
+#    s3_client = S3Client()
+#    embed_model = OpenAIEmbeddings(
+#                       model="text-embedding-3-small",
+#                    )
 
     question_dir = "/" + TMP + QUESTION_STORE_DIR
     answer_dir = "/" + TMP + ANSWER_STORE_DIR
@@ -289,8 +291,10 @@ def process_pqs(questions: list[dict]) -> list[int]:
         # if some PQs have failed the document creation, they're stored for later
         revisit_ids.extend(failed_ids)
 
-        question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-        answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+        question_store, question_ids_not_added = update_vector_store(question_documents, question_dir)
+        answer_store, answer_ids_not_added = update_vector_store(answer_documents, answer_dir)
+#        question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+#        answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:
         logger.error("Failed to update stores with PQs \n%s:\n %s",success_ids,e)
 
@@ -301,7 +305,7 @@ def process_pqs(questions: list[dict]) -> list[int]:
 
 
 async def get_pq_stats():
-#    to_check_count = len(read_status_file(STATUS_FILE, delete=False))
+#    to_check_count = len(read_ids_file(STATUS_FILE, delete=False))
     to_check_count = len(await read_status_data())
     logger.info("To check count %s", to_check_count)
 
@@ -348,10 +352,13 @@ async def read_status_data() -> list[str]:
         logger.error("Failed to manage the mongo status item: %s",e)
     return ids
 
-def read_status_file(filename: str, delete: bool = False) -> list[str]:
+def read_ids_file(filename: str, delete: bool = False) -> list[str]:
     """Downloads the named file from S3, and returns the
     contents as a list of strings.
-    The file is deleted to avoid accidental reuse.
+    The file may be deleted to avoid accidental reuse.
+
+    The use case is that the file contains PQ ids, each lines
+    containing an id as its first (and typically only) item.
     """
     # load file containing the ids to check using pq api
     # hack to overcome ruff insistence on avoiding /tmp
@@ -360,7 +367,7 @@ def read_status_file(filename: str, delete: bool = False) -> list[str]:
 
     lines = []
 
-    s3_client = S3Client()
+#    s3_client = S3Client()
 
     exists = s3_client.check_object_existence(file)
 
@@ -375,7 +382,7 @@ def read_status_file(filename: str, delete: bool = False) -> list[str]:
             with open(file,encoding="utf-8") as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
-                    lines.append(int(row[0]))
+                    lines.append(int(row[0]))     # expects the first item to be an integer
             logger.info("Read %s items from file.", len(lines) )
         except Exception as e:
             logger.error("Error downloading/reading %s from S3: %s", file, e)
@@ -402,7 +409,7 @@ def read_tags_file(filename: str) -> list[str]:
 
     lines = []
 
-    s3_client = S3Client()
+#    s3_client = S3Client()
 
     exists = s3_client.check_object_existence(file)
 
@@ -434,7 +441,7 @@ def read_chat_file(tag: str) -> dict:
     # hack to overcome ruff insistence on avoiding /tmp
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     filename = "semantic_chat_" + tag + ".json"
-    s3_client = S3Client()
+#    s3_client = S3Client()
 
     target =  store_dir + filename
 
@@ -467,7 +474,7 @@ def write_ids_file(filename:str, ids:list[str]):
         logger.error("Error storing ids in file %s: %s", id_file, e)
         return
 
-    s3_client = S3Client()
+#    s3_client = S3Client()
 
     try:
         s3_client.upload_file(id_file)
@@ -475,9 +482,9 @@ def write_ids_file(filename:str, ids:list[str]):
         logger.error("Error storing %s in S3: %s", id_file, e)
 
 
-def create_vector_store(s3_client: S3Client,
-                        documents: list[Document],
-                        embed_model: OpenAIEmbeddings,
+#def create_vector_store(s3_client: S3Client,
+def create_vector_store(documents: list[Document],
+#                        embed_model: OpenAIEmbeddings,
                         store_dir: str) -> FAISS:
     """
     Create a FAISS vector store from the supplied Documents using
@@ -501,9 +508,9 @@ def create_vector_store(s3_client: S3Client,
     return vector_store
 
 
-def update_vector_store(s3_client: S3Client,
-                        documents: list[Document],
-                        embed_model: OpenAIEmbeddings,
+#def update_vector_store(s3_client: S3Client,
+def update_vector_store(documents: list[Document],
+#                        embed_model: OpenAIEmbeddings,
                         store_dir: str) -> tuple[FAISS, list[int]]:
     """
     Add Documents to an existing FAISS vector store.
@@ -527,13 +534,15 @@ def update_vector_store(s3_client: S3Client,
     if not exists:
         logger.info("Creating new FAISS store at %s", store_dir)
 
-        vector_store = create_vector_store(s3_client, documents, embed_model, store_dir)
+        vector_store = create_vector_store(documents, store_dir)
+#        vector_store = create_vector_store(s3_client, documents, embed_model, store_dir)
         logger.info("Created %s", vector_store)
 
         return vector_store, ids_to_be_inserted
 
     try:
-        vector_store = load_store(s3_client, store_dir, embed_model)
+        vector_store = load_store(store_dir)
+#        vector_store = load_store(s3_client, store_dir, embed_model)
         num_documents = len(vector_store.index_to_docstore_id)
         logger.info("Total number of documents prior to update: %s", num_documents)
 
@@ -564,9 +573,10 @@ def update_vector_store(s3_client: S3Client,
     return vector_store, ids_not_added
 
 
-def load_store(s3_client: S3Client,
-               store_dir: str,
-               embed_model: OpenAIEmbeddings) -> FAISS:
+#def load_store(s3_client: S3Client,
+def load_store(store_dir: str,
+#               embed_model: OpenAIEmbeddings) -> FAISS:
+               ) -> FAISS:
     """
     Instantiates a FAISS vector store from its constituent index files,
     which are downloaded from S3.
@@ -582,7 +592,8 @@ def load_store(s3_client: S3Client,
     s3_client.download_file(pickle_file, pickle_file)
 
     try:
-       return FAISS.load_local(store_dir, embed_model,allow_dangerous_deserialization=True)
+ #      return FAISS.load_local(store_dir, embed_model,allow_dangerous_deserialization=True)
+       return FAISS.load_local(store_dir, allow_dangerous_deserialization=True)
     except Exception as e:
        logger.error("Error creating FAISS: %s", e)
        return None
@@ -613,7 +624,7 @@ async def add_pqs_file(filename: str):
     question_dir = "/" + TMP + QUESTION_STORE_DIR
     answer_dir = "/" + TMP + ANSWER_STORE_DIR
 
-    s3_client = S3Client()
+#    s3_client = S3Client()
     exists = s3_client.check_object_existence(target)
 
     if not exists:
@@ -628,14 +639,16 @@ async def add_pqs_file(filename: str):
     df = pd.read_csv(target)
     df = populate_embeddable_questions(df)
 
-    embed_model = OpenAIEmbeddings(
-                       model="text-embedding-3-small",
-                    )
+#    embed_model = OpenAIEmbeddings(
+#                       model="text-embedding-3-small",
+#                    )
 
     try:
         question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
-        question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
-        answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
+        question_store, question_ids_not_added = update_vector_store(question_documents, question_dir)
+        answer_store, answer_ids_not_added = update_vector_store(answer_documents, answer_dir)
+#        question_store, question_ids_not_added = update_vector_store(s3_client, question_documents, embed_model, question_dir)
+#        answer_store, answer_ids_not_added = update_vector_store(s3_client, answer_documents, embed_model, answer_dir)
     except Exception as e:
         logger.error("Failed to update stores with data from %s : %s", target, e)
 
@@ -648,7 +661,7 @@ async def get_pq_ids():
     store_dir = "/" + TMP + QUESTION_STORE_DIR
     pq_ids_file = store_dir + IDS_FILE
 
-    s3_client = S3Client()
+#    s3_client = S3Client()
 
     exists = s3_client.check_object_existence(pq_ids_file)
 
@@ -695,9 +708,9 @@ async def get_pq_ids():
 
 async def check_storage():
 
-    global question_store, answer_store
+    global question_store, answer_store, embed_model
 
-    s3_client = S3Client()
+#    s3_client = S3Client()
 
     # hack to overcome ruff insistence on avoiding /tmp
 
@@ -714,8 +727,10 @@ async def check_storage():
     if not exists:
         logger.error("Vector stores not located")
     else:
-        question_store = load_store(s3_client, question_dir, embed_model)
-        answer_store = load_store(s3_client, answer_dir, embed_model)
+        question_store = load_store(question_dir)
+        answer_store = load_store(answer_dir)
+#        question_store = load_store(s3_client, question_dir, embed_model)
+#        answer_store = load_store(s3_client, answer_dir, embed_model)
 
     return question_store, answer_store
 
@@ -743,7 +758,7 @@ def get_answer_match(question, limit):
 
 def store_output(tag, json_content):
     filename = "semantic_chat_" + tag + ".json"
-    s3_client = S3Client()
+#    s3_client = S3Client()
     # hack to overcome ruff insistence on avoiding /tmp
 
     store_dir = "/" + TMP + QUESTION_STORE_DIR
@@ -780,7 +795,7 @@ def read_output(tag):
     return result
 
 async def load_status():
-    ids = read_status_file(STATUS_FILE, delete=False)
+    ids = read_ids_file(STATUS_FILE, delete=False)
 
     if len(ids) > 0:
         logger.info("The following PQs will be stored: \n%s", ids)

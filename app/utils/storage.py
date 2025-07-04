@@ -32,7 +32,7 @@ UPDATE_FILE = "pq_update.csv"
 question_store = None
 answer_store = None
 s3_client = S3Client()
-embed_model = OpenAIEmbeddings(model="text-embedding-3-small")
+embed_model = None
 
 pq_ids = []
 
@@ -708,7 +708,7 @@ async def get_pq_ids():
 
 async def check_storage():
 
-    global question_store, answer_store
+    global question_store, answer_store, embed_model
 
 #    s3_client = S3Client()
 
@@ -717,9 +717,9 @@ async def check_storage():
     question_dir = "/" + TMP + QUESTION_STORE_DIR
     answer_dir = "/" + TMP + ANSWER_STORE_DIR
 
-#    embed_model = OpenAIEmbeddings(
-#                       model="text-embedding-3-small",
-#                 )
+    embed_model = OpenAIEmbeddings(
+                       model="text-embedding-3-small",
+                 )
     question_index = question_dir + "index.faiss"
 
     exists = s3_client.check_object_existence(question_index)

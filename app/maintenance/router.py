@@ -4,7 +4,12 @@ from logging import getLogger
 from fastapi import APIRouter, BackgroundTasks, Query
 from pydantic import BaseModel
 
-from app.common.sync_mongo import get_item, list_item_ids, replace_item
+from app.common.sync_mongo import (
+    get_item,
+    list_item_ids,
+    list_timestamp_data,
+    replace_item,
+)
 
 #from app.common.mongo import get_db
 from app.utils.storage import (
@@ -84,6 +89,11 @@ async def list_items(collection: str = Query("", description="mongo collection")
     """Retrieves mongo content."""
     items = list_item_ids(collection_name=collection)
     return {"Stored Items":items}
+
+
+@router.get("/get_timestamp_data")
+async def get_timestamps():
+    return list_timestamp_data()
 
 
 @router.get("/chat_bulk_upload")

@@ -592,8 +592,7 @@ def load_store(store_dir: str,
     s3_client.download_file(pickle_file, pickle_file)
 
     try:
- #      return FAISS.load_local(store_dir, embed_model,allow_dangerous_deserialization=True)
-       return FAISS.load_local(store_dir, allow_dangerous_deserialization=True)
+       return FAISS.load_local(store_dir, embed_model,allow_dangerous_deserialization=True)
     except Exception as e:
        logger.error("Error creating FAISS: %s", e)
        return None

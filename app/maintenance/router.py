@@ -14,7 +14,6 @@ from app.common.sync_mongo import (
 from app.utils.storage import (
     get_pq_stats,
     read_chat_file,
-    read_ids_file,
     update_pqs,
 )
 
@@ -85,18 +84,4 @@ async def insert_chat(tag: str = Query("", description="chat tag"),
     data = read_chat_file(tag)
     to_store = {"chat":data, "timestamp":timestamp}
     item = replace_item(item=to_store, tag=tag)
-    return {"Mongo record key":item}
-
-
-@router.get("/db_status_update")
-async def replace_ids_from_file(filename: str = Query("", description="File to be uploaded"),
-                      key: str = Query("", description="item key"),
-                      collection: str = Query("", description="mongo collection"),
-                      name: str = Query("", description="name of data structure")):
-    """Uses a file of PQ ids to replace the collection stored in Mongo. Used to repair the
-    list of ids to check if an error has damaged the stored collection.
-    """
-    data = read_ids_file(filename)
-
-    item = replace_item(item=data, tag=key, collection_name=collection, data_name=name)
     return {"Mongo record key":item}

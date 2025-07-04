@@ -86,3 +86,11 @@ def replace_item(item, tag: str, collection_name: str = "semantic_output", data_
 def list_item_ids(collection_name: str = "semantic_output"):
     collection = db[collection_name]
     return collection.distinct("_id")
+
+def list_timestamp_data(collection_name: str = "semantic_output"):
+    collection = db[collection_name]
+    cursor = collection.find({})
+    timestamps = []
+    for item in cursor:
+        timestamps.append(item["timestamp"])
+    return {"timestamps":sorted(timestamps)}

@@ -92,10 +92,9 @@ def list_timestamp_data(collection_name: str = "semantic_output"):
     cursor = collection.find({})
     timestamps = []
     for item in cursor:
-        print(item)
         content = item.get("content",{})
         result = content.get("data",[])
-        key = result.get("id_","")
+        key = result.get("_id","")
         timestamp = result.get("timestamp","")
         timestamps.append((key,timestamp))
     return {"timestamps":dict(sorted(timestamps))}

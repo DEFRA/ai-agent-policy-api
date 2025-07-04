@@ -92,6 +92,7 @@ def list_timestamp_data(collection_name: str = "semantic_output"):
     cursor = collection.find({})
     timestamps = []
     for item in cursor:
+        print(item)
         content = item.get("content",{})
         result = content.get("data",[])
         key = result.get("id_","")

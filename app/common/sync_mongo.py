@@ -96,5 +96,6 @@ def list_timestamp_data(collection_name: str = "semantic_output"):
         result = content.get("data",[])
         key = result.get("id_","")
         timestamp = result.get("timestamp","")
-        timestamps.append({key:timestamp})
-    return {"timestamps":sorted(timestamps)}
+        timestamps.append((key,timestamp))
+    return {"timestamps":dict(sorted(timestamps))}
+

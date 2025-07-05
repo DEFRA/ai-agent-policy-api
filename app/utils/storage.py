@@ -18,10 +18,10 @@ from .policy_retrieval import (
     get_specific_question_details,
 )
 
-QUESTION_STORE_DIR="/question_store_4/"
-ANSWER_STORE_DIR="/answer_store_4/"
-
+# this is a simple hack to avoid a ruff complaint about temp file usage
 TMP = "tmp"
+QUESTION_STORE_DIR = "/" + TMP + "/question_store_4/"
+ANSWER_STORE_DIR =  "/" + TMP + "/answer_store_4/"
 
 question_store = None
 answer_store = None
@@ -130,7 +130,8 @@ def get_stored_pq_ids() -> list[int]:
     same ids in the Answer store.
     """
 
-    store_dir = "/" + TMP + QUESTION_STORE_DIR
+#    store_dir = "/" + TMP + QUESTION_STORE_DIR
+    store_dir = QUESTION_STORE_DIR
     exists = s3_client.check_object_existence(store_dir + "index.faiss")
 
     pids = []
@@ -250,8 +251,8 @@ def process_pqs(questions: list[dict]) -> list[int]:
 
     revisit_ids = []
 
-    question_dir = "/" + TMP + QUESTION_STORE_DIR
-    answer_dir = "/" + TMP + ANSWER_STORE_DIR
+#    question_dir = "/" + TMP + QUESTION_STORE_DIR
+#    answer_dir = "/" + TMP + ANSWER_STORE_DIR
 
     for question in questions:
         if not question["answerText"]:
@@ -273,8 +274,10 @@ def process_pqs(questions: list[dict]) -> list[int]:
         # if some PQs have failed the document creation, they're stored for later
         revisit_ids.extend(failed_ids)
 
-        question_store, question_ids_not_added = update_vector_store(question_documents, question_dir)
-        answer_store, answer_ids_not_added = update_vector_store(answer_documents, answer_dir)
+#        question_store, question_ids_not_added = update_vector_store(question_documents, question_dir)
+#        answer_store, answer_ids_not_added = update_vector_store(answer_documents, answer_dir)
+        question_store, question_ids_not_added = update_vector_store(question_documents, QUESTION_STORE_DIR)
+        answer_store, answer_ids_not_added = update_vector_store(answer_documents, ANSWER_STORE_DIR)
     except Exception as e:
         logger.error("Failed to update stores with PQs \n%s:\n %s",success_ids,e)
 
@@ -331,17 +334,18 @@ def read_chat_file(tag: str) -> dict:
     """
     # load file containing the ids to check using pq api
     # hack to overcome ruff insistence on avoiding /tmp
-    store_dir = "/" + TMP + QUESTION_STORE_DIR
+#    store_dir = "/" + TMP + QUESTION_STORE_DIR
+
     filename = "semantic_chat_" + tag + ".json"
 
-    target =  store_dir + filename
+    target =  QUESTION_STORE_DIR + filename
 
     exists = s3_client.check_object_existence(target)
 
     if not exists:
        return {"message":"Semantic Chat output not yet available, please try again soon."}
 
-    create_directory_if_necessary(store_dir)
+    create_directory_if_necessary(QUESTION_STORE_DIR)
 
     s3_client.download_file(target, target)
 
@@ -470,91 +474,6 @@ def create_directory_if_necessary(directory_name: str):
     except Exception as e:
         logger.error("Error creating %s directory: %s", path, e)
 
-"""
-async def add_pqs_file(filename: str):
-
-    global question_store, answer_store
-
-    # quick hack to overcome the ruff dislike of explicitly using /tmp
-    temp_dir = "/" + TMP + "/"
-    target = temp_dir + filename
-    question_dir = "/" + TMP + QUESTION_STORE_DIR
-    answer_dir = "/" + TMP + ANSWER_STORE_DIR
-
-    exists = s3_client.check_object_existence(target)
-
-    if not exists:
-        logger.error("Source file %s does not exist.", target)
-        return
-
-    create_directory_if_necessary(temp_dir)
-
-    s3_client.download_file(target, target)
-
-    # The necessary PQ transformations are simpler using pandas
-    df = pd.read_csv(target)
-    df = populate_embeddable_questions(df)
-
-    try:
-        question_documents, answer_documents, success_ids, failed_ids = create_documents(df)
-        question_store, question_ids_not_added = update_vector_store(question_documents, question_dir)
-        answer_store, answer_ids_not_added = update_vector_store(answer_documents, answer_dir)
-    except Exception as e:
-        logger.error("Failed to update stores with data from %s : %s", target, e)
-
-    return
-
-async def get_pq_ids():
-    global pq_ids
-
-    # hack to overcome ruff insistence on avoiding /tmp
-    store_dir = "/" + TMP + QUESTION_STORE_DIR
-    pq_ids_file = store_dir + IDS_FILE
-
-#    s3_client = S3Client()
-
-    exists = s3_client.check_object_existence(pq_ids_file)
-
-    if not exists:
-        logger.info("Retrieving ids")
-        try:
-            pq_ids = get_all_question_ids(answering_body_id=13, house="Commons")
-            logger.info("Retrieved %s PQs from parliament api", len(pq_ids))
-        except Exception as e:
-            logger.error("Error retrieving ids: %s", e)
-
-        create_directory_if_necessary(store_dir)
-
-        try:
-            logger.info("Writing csv file of ids %s", pq_ids_file)
-            with open(pq_ids_file, "w") as csvfile:
-                writer = csv.writer(csvfile)
-                for pid in pq_ids:
-                    writer.writerow([pid])
-        except Exception as e:
-            logger.error("Error storing ids in file %s: %s", pq_ids_file, e)
-        try:
-            s3_client.upload_file(pq_ids_file)
-        except Exception as e:
-            logger.error("Error storing %s in S3: %s", pq_ids_file, e)
-
-    else:
-        create_directory_if_necessary(store_dir)
-
-        try:
-            pq_ids = []
-            s3_client.download_file(pq_ids_file, pq_ids_file)
-
-            with open(pq_ids_file) as csvfile:
-                reader = csv.reader(csvfile)
-                for row in reader:
-                    pq_ids.append(int(row[0]))
-            logger.info("Read %s PQ ids from file %s.", len(pq_ids), pq_ids_file)
-        except Exception as e:
-            logger.error("Error downloading/reading %s from S3: %s", pq_ids_file, e)
-
-    return pq_ids
-"""
 
 async def check_storage():
     """Load the Question and Answer vector stores from S3.
@@ -566,21 +485,21 @@ async def check_storage():
 
     # hack to overcome ruff insistence on avoiding /tmp
 
-    question_dir = "/" + TMP + QUESTION_STORE_DIR
-    answer_dir = "/" + TMP + ANSWER_STORE_DIR
+#    question_dir = "/" + TMP + QUESTION_STORE_DIR
+#    answer_dir = "/" + TMP + ANSWER_STORE_DIR
 
     embed_model = OpenAIEmbeddings(
                        model="text-embedding-3-small",
                  )
-    question_index = question_dir + "index.faiss"
+    question_index = QUESTION_STORE_DIR + "index.faiss"
 
     exists = s3_client.check_object_existence(question_index)
 
     if not exists:
         logger.error("Vector stores not located")
     else:
-        question_store = load_store(question_dir)
-        answer_store = load_store(answer_dir)
+        question_store = load_store(QUESTION_STORE_DIR)
+        answer_store = load_store(ANSWER_STORE_DIR)
 
     return question_store, answer_store
 
@@ -636,4 +555,3 @@ def read_output(tag: str):
         result = read_chat_file(tag)
 
     return result
-

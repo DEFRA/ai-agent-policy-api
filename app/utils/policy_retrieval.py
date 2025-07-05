@@ -7,7 +7,7 @@ import requests
 logger = getLogger(__name__)
 
 
-def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons", tabled_from=None):
+def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons", tabled_from=None) -> list[int]:
     """
     Fetch written question IDs from the Parliament API
     Args:
@@ -65,7 +65,7 @@ def get_question_ids(answering_body_id=None, skip=0, take=10_000, house="Commons
         return []
 
 
-def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=5_000, tabled_from=None):
+def get_all_question_ids(answering_body_id=None, house="Commons", batch_size=5_000, tabled_from=None) -> list[int]:
     """
     Fetch all written question IDs from the Parliament API, handling pagination
     Args:
@@ -137,7 +137,7 @@ def get_question_details(question_id: str) -> dict[str, Any]:
         return {}
 
 
-def get_all_question_details(answering_body_id: int = None, house: str = "Commons", tabled_from: str=None):
+def get_all_question_details(answering_body_id: int = None, house: str = "Commons", tabled_from: str=None) -> list[dict]:
     """
     Fetch detailed information for all questions and save to a DataFrame
     Args:

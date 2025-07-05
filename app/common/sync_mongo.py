@@ -15,6 +15,10 @@ db: Optional[Database] = None
 
 
 def get_mongo_client() -> MongoClient:
+    """Get a Synchronous Client - the Asynchronous alternative
+    doesn't work well when dependent functions are run as
+    background jobs by FastAPI.
+    """
     global client
     if client is None:
         # Use the custom CA Certs from env vars if set.
@@ -50,6 +54,9 @@ def check_connection(client: MongoClient):
 
 
 def add_item(item: dict, tag: str, collection_name: str = "semantic_output", data_name: str = "data") -> str:
+    """Add a json-style object to a collection with the specified data name.
+    As the typical item is a chat output, the collection defaults to semantic_output.
+    """
     collection = db[collection_name]
     item_dict = {data_name:item}
     to_store = {"_id": tag, "content": item_dict}
@@ -61,12 +68,12 @@ def add_item(item: dict, tag: str, collection_name: str = "semantic_output", dat
 
 
 def get_item(tag: str, collection_name: str = "semantic_output", data_name: str = "data") -> dict:
+    """Retrieve an object from the specified collection using the tag as key."""
     collection = db[collection_name]
-    logger.info("Found collection %s",collection)
     result = {}
     try:
         item = collection.find_one({"_id": tag})
-        logger.info("Retrieved item %s",item)
+
         if item is not None:
             content = item.get("content",{})
             result = content.get(data_name,[])
@@ -84,18 +91,21 @@ def replace_item(item, tag: str, collection_name: str = "semantic_output", data_
     return add_item(item, tag, collection_name, data_name)
 
 def list_item_ids(collection_name: str = "semantic_output"):
+    """Mongo items have ids specified by the _id key."""
     collection = db[collection_name]
     return collection.distinct("_id")
 
 def list_timestamp_data(collection_name: str = "semantic_output"):
+    """Return the timestamp data from the objects in the collection.
+    Default use case is to retrieve the timestamps of the chat outputs.
+    """
     collection = db[collection_name]
     cursor = collection.find({})
     timestamps = []
     for item in cursor:
-        key = item.get("_id","")
         content = item.get("content",{})
         result = content.get("data",[])
         timestamp = result.get("timestamp","")
-        timestamps.append((key,timestamp))
-    return {"timestamps":dict(sorted(timestamps))}
+        timestamps.append(timestamp)
+    return {"timestamps":sorted(timestamps)}
 
